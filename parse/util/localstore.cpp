@@ -520,3 +520,46 @@ void LocalStore::DumpProcFileSocketEdge2FactSize(int _file_id) {
     edgefact_tmp_file.close();
     std::remove(edgefact_tmp_path.c_str());
 }
+
+
+// Store the BG mappings into a separate folder
+void LocalStore::BGStoreToFile() {
+        // save the nodes
+        std::ofstream bg_nodes(kg_path + "/inter_bg_nodes.txt", std::ios::app);
+        if (!bg_nodes.is_open()) {
+                std::cerr << "Failed to open BG nodes file." << std::endl;
+                return;
+        }
+
+        // save the edges
+        std::ofstream bg_edges(kg_path + "/inter_bg_edges.txt", std::ios::app);
+        if (!bg_edges.is_open()) {
+                std::cerr << "Failed to open BG edges file." << std::endl;
+                return;
+        }
+
+        for (const auto it: infotbl->FileInteractionTable) {
+                bg_nodes << it.first << "," << "FILE" << std::endl;
+        }
+
+        for (const auto it: infotbl->ProcInteractionTable) {
+                bg_nodes << it.first << "," << "PROC" << std::endl;
+        }
+
+        for (const auto it: infotbl->KGEdgeTable) {
+                const auto edge = it.second;
+
+                // find existense of any directed edges
+                const auto file_edge_iter = infotbl->FileInteractionTable.find(edge->n1_hash);
+                const auto proc_edge_iter = infotbl->ProcInteractionTable.find(edge->n1_hash);
+
+                if (file_edge_iter != infotbl->FileInteractionTable.end() || proc_edge_iter != infotbl->ProcInteractionTable.end()) {
+                        bg_edges << edge->n1_hash << "," << edge->n2_hash << std::endl;
+                }
+        }
+
+        bg_nodes.close();
+        bg_edges.close();
+
+        std::cout << "finished writing BG graph nodes and edges." << std::endl;
+}

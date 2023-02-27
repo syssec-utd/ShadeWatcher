@@ -31,6 +31,8 @@ public:
 
     // Count the number of procs, files, sockets, and edges
     void DumpProcFileSocketEdge2FactSize(int = 0);
+
+    void BGStoreToFile();
 };
 
 // load KG from local files
