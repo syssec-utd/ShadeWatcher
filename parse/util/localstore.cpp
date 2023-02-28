@@ -539,23 +539,19 @@ void LocalStore::BGStoreToFile() {
         }
 
         for (const auto it: infotbl->FileInteractionTable) {
-                bg_nodes << it.first << "," << "FILE" << std::endl;
+				bg_nodes << it.first << "," << "FILE" << std::endl;
+
+				for (const auto &edge : *im) {
+                        bg_edges << edge->n1_hash << "," << edge->n2_hash << "," << EdgeEnum2String(edge->relation) << std::endl;
+				}
         }
 
         for (const auto it: infotbl->ProcInteractionTable) {
                 bg_nodes << it.first << "," << "PROC" << std::endl;
-        }
 
-        for (const auto it: infotbl->KGEdgeTable) {
-                const auto edge = it.second;
-
-                // find existense of any directed edges
-                const auto file_edge_iter = infotbl->FileInteractionTable.find(edge->n1_hash);
-                const auto proc_edge_iter = infotbl->ProcInteractionTable.find(edge->n1_hash);
-
-                if (file_edge_iter != infotbl->FileInteractionTable.end() || proc_edge_iter != infotbl->ProcInteractionTable.end()) {
-                        bg_edges << edge->n1_hash << "," << edge->n2_hash << std::endl;
-                }
+				for (const auto &edge : *im) {
+                        bg_edges << edge->n1_hash << "," << edge->n2_hash << "," << EdgeEnum2String(edge->relation) << std::endl;
+				}
         }
 
         bg_nodes.close();
