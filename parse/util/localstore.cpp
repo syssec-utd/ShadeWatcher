@@ -541,7 +541,7 @@ void LocalStore::BGStoreToFile() {
         for (const auto it: infotbl->FileInteractionTable) {
 				bg_nodes << it.first << "," << "FILE" << std::endl;
 
-				for (const auto &edge : *im) {
+				for (const auto &edge : *it.second) {
                         bg_edges << edge->n1_hash << "," << edge->n2_hash << "," << EdgeEnum2String(edge->relation) << std::endl;
 				}
         }
@@ -549,7 +549,7 @@ void LocalStore::BGStoreToFile() {
         for (const auto it: infotbl->ProcInteractionTable) {
                 bg_nodes << it.first << "," << "PROC" << std::endl;
 
-				for (const auto &edge : *im) {
+				for (const auto &edge : *it.second) {
                         bg_edges << edge->n1_hash << "," << edge->n2_hash << "," << EdgeEnum2String(edge->relation) << std::endl;
 				}
         }
