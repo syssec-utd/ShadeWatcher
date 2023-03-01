@@ -542,7 +542,9 @@ void LocalStore::BGStoreToFile() {
 				bg_nodes << it.first << "," << "FILE" << std::endl;
 
 				for (const auto &edge : *it.second) {
-                        bg_edges << edge->n1_hash << "," << edge->n2_hash << "," << EdgeEnum2String(edge->relation) << std::endl;
+						const std::string rel = EdgeEnum2String(edge->relation);
+						if (rel.compare("") == 0) continue;
+						bg_edges << edge->n1_hash << "," << edge->n2_hash << "," << rel << std::endl;
 				}
         }
 
@@ -550,7 +552,9 @@ void LocalStore::BGStoreToFile() {
                 bg_nodes << it.first << "," << "PROC" << std::endl;
 
 				for (const auto &edge : *it.second) {
-                        bg_edges << edge->n1_hash << "," << edge->n2_hash << "," << EdgeEnum2String(edge->relation) << std::endl;
+						const std::string rel = EdgeEnum2String(edge->relation);
+						if (rel.compare("") == 0) continue;
+						bg_edges << edge->n1_hash << "," << edge->n2_hash << "," << rel << std::endl;
 				}
         }
 
