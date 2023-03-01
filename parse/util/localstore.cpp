@@ -544,12 +544,8 @@ void LocalStore::BGStoreToFile() {
 			for (const auto &edge : *it.second) {
 				const std::string rel = EdgeEnum2String(edge->relation);
 				if (rel.compare("") == 0) continue;
-
-				std::string n1 = infotbl->SearchNode(edge->n1_hash).second;
-				std::string n2 = infotbl->SearchNode(edge->n2_hash).second;
-				if (n1.compare("miss when searching") == 0 || n2.compare("miss when searching") == 0) continue;
-
-				bg_edges << n1 << "," << n2 << "," << rel << std::endl;
+				
+				bg_edges << edge->n1_hash << "," << edge->n2_hash << "," << rel << std::endl;
 			}
         }
 
@@ -559,12 +555,8 @@ void LocalStore::BGStoreToFile() {
 			for (const auto &edge : *it.second) {
 				const std::string rel = EdgeEnum2String(edge->relation);
 				if (rel.compare("") == 0) continue;
-
-				std::string n1 = infotbl->SearchNode(edge->n1_hash).second;
-				std::string n2 = infotbl->SearchNode(edge->n2_hash).second;
-				if (n1.compare("miss when searching") == 0 || n2.compare("miss when searching") == 0) continue;
-
-				bg_edges << n1 << "," << n2 << "," << rel << std::endl;
+				
+				bg_edges << edge->n1_hash << "," << edge->n2_hash << "," << rel << std::endl;
 			}
         }
 
