@@ -7,13 +7,15 @@ set -e
 
 if [ -z ${AUDIT+x} ] || [ -z ${SHADEWATCHER_DIR+x} ];
 then 
-    echo "define env vars: AUDIT, SHADEWATCHER_DIR"
+    echo "define env vars:
+            AUDIT               name to store the dataset in shadewatcher
+            SHADEWATCHER_DIR    installation path of shadewatcher repo"
     exit
 fi
 
 if [ -z ${GRAPH_URL+x} ] && [ -z ${GRAPH_PATH+x} ];
 then 
-    echo "define env vars: GRAPH_URL or GRAPH_PATH"
+    echo "define env vars: GRAPH_URL or GRAPH_PATH (both for a graph.json)"
     exit
 elif [ -z ${GRAPH_PATH+x} ];
 then

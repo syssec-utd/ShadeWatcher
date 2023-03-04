@@ -12,8 +12,8 @@ shopt -s globstar
 if [ -z ${CONCAT_DIR+x} ] || [ -z ${SHADEWATCHER_DIR+x} ];
 then 
     echo "define env vars:
-    CONCAT_DIR          the path to dump edgefacts and nodefacts
-    SHADEWATCHER_DIR"
+    CONCAT_DIR          the path to dump edgefact.txt and nodefact.txt
+    SHADEWATCHER_DIR    the path of shadewatcher installation (repo)"
     exit
 fi
 

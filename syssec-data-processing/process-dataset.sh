@@ -25,8 +25,8 @@ BENIGN_NAME="benign"
 if [ -z ${1+x} ] || [ -z ${SHADEWATCHER_DIR+x} ];
 then
     echo "define vars:
-        arg 1 : DATASET_PATH            path to directory with {$BENIGN_NAME,$ANOMALY_NAME} subdirectories with [GRAPH_ID]/graph.json
-        env : SHADEWATCHER_DIR          absolute path of ShadeWatcher installation"
+        arg 1 : DATASET_PATH        path to directory with {$BENIGN_NAME,$ANOMALY_NAME} subdirectories with [GRAPH_ID]/graph.json
+        env : SHADEWATCHER_DIR      absolute path of ShadeWatcher installation"
     exit
 fi
 
