@@ -7,6 +7,8 @@ set -e
 # and looks for a "graph.json" in each one to parse using shadewatcher
 # and dumps the parser output int a single edge and node file respectively.
 
+shopt -s globstar
+
 if [ -z ${CONCAT_DIR+x} ] || [ -z ${SHADEWATCHER_DIR+x} ];
 then 
     echo "define env vars:
@@ -25,7 +27,7 @@ mkdir -p $CONCAT_DIR
 rm -ri $CONCAT_DIR
 mkdir -p $CONCAT_DIR
 
-for f in $DATASET_PATH/*
+for f in $DATASET_PATH/nd*
 do
     # reuse the same audit to parse all of the graphs,
     # then concat all of edge and node entries into a shared directory
