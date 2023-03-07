@@ -288,7 +288,7 @@ if __name__ == "__main__":
 
     node_cache = set()
 
-    def cache_vertex(vertex, caller_vertex=None):
+    def cache_fd_vertex(vertex, caller_vertex=None):
         '''Track the creation of resource nodes
         
         FILE nodes:
@@ -349,6 +349,12 @@ if __name__ == "__main__":
 
             audits.append(record_builder.build())
 
+        # set the fd vertex to remember the PID of its creator.
+        # used to handle the cases of FILE_EXEC
+        vertex[VertexKey.PID_ITEM] = {
+            ItemKey.VALUE: caller_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
+        }
+
         # cache the vertex
         node_cache.add(vertex[VertexKey.ID])
 
@@ -395,7 +401,7 @@ if __name__ == "__main__":
 
         if label == EdgeLabel.READ:
             if out_vertex[VertexKey.ID] not in node_cache:
-                cache_vertex(out_vertex, caller_vertex=in_vertex)
+                cache_fd_vertex(out_vertex, caller_vertex=in_vertex)
 
             record_builder = AuditBeatJsonBuilder()
             record_builder.set_data(
@@ -411,7 +417,7 @@ if __name__ == "__main__":
 
         elif label == EdgeLabel.WRITE:
             if in_vertex[VertexKey.ID] not in node_cache:
-                cache_vertex(in_vertex, caller_vertex=out_vertex)
+                cache_fd_vertex(in_vertex, caller_vertex=out_vertex)
 
             record_builder = AuditBeatJsonBuilder()
             record_builder.set_data(
