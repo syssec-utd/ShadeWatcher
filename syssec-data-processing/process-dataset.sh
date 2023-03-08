@@ -99,7 +99,7 @@ done
 train_entity_count=$(head -n 1 $AGGREGATE_DIR/$BENIGN_NAME/entity2id.txt)
 test_entity_count=$(head -n 1 $AGGREGATE_DIR/$ANOMALY_NAME/entity2id.txt)
 # add empty records
-seq $test_entity_count $(expr $train_entity_count -1) | awk '{print 0 " " $1}' >> $AGGREGATE_DIR/$ANOMALY_NAME/entity2id.txt
+seq $test_entity_count $(expr $train_entity_count - 1) | awk '{print 0 " " $1}' >> $AGGREGATE_DIR/$ANOMALY_NAME/entity2id.txt
 sed -i "1s/.*/$train_entity_count/" $AGGREGATE_DIR/$ANOMALY_NAME/entity2id.txt
 
 # train the benign model
