@@ -95,6 +95,10 @@ do
     python3.6 $SCRIPT_DIR/encoding-parser.py $AGGREGATE_DIR/$graph_type/edgefact.txt $AGGREGATE_DIR/$graph_type/nodefact.txt -o $AGGREGATE_DIR/$graph_type
 done
 
+# TODO: this code might need logic to either:
+#   - error when the test size is greater than the training size
+#   - trim the test data to be the size of the training data
+
 # pad the anomaly dataset to match the entity2id.txt size of the benign training set
 train_entity_count=$(head -n 1 $AGGREGATE_DIR/$BENIGN_NAME/entity2id.txt)
 test_entity_count=$(head -n 1 $AGGREGATE_DIR/$ANOMALY_NAME/entity2id.txt)
