@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-Parses a "graph.json" into the format of auditbeat json records and 
+Parses a "graph.json" into the format of auditbeat json records and
 additional procinfo, fdinfo, and socketinfo directories expected by shadewatcher.
 '''
 
@@ -138,17 +138,12 @@ if __name__ == "__main__":
         READ = "READ"
         WRITE = "WRITE"
         PROC_CREATE = "PROC_CREATE"
-
-    label2syscall = {
-        EdgeLabel.READ: "read",
-        EdgeLabel.WRITE: "write",
-        EdgeLabel.PROC_CREATE: "execve",
-    }
+        FILE_EXEC = "FILE_EXEC"
+        IP_CONNECTION_EDGE = "IP_CONNECTION_EDGE"
 
     ##############################
     # String Enum Key Definitions
     ##############################
-
 
     class VertexType:
         FILE = "FileNode"
@@ -165,6 +160,12 @@ if __name__ == "__main__":
         OUT_VERTEX = "_outV"
         IN_VERTEX = "_inV"
         TIME_START_ITEM = "TIME_START"
+
+        # part of IP_CONNECTION_EDGE
+        REMOTE_INET_ADDR_ITEM = "REMOTE_INET_ADDR"
+        REMOTE_PORT_ITEM = "REMOTE_PORT"
+        LOCAL_INET_ADDR_ITEM = "LOCAL_INET_ADDR"
+        LOCAL_PORT_ITEM = "LOCAL_PORT"
 
     class VertexKey:
         # Original Dataset
@@ -188,6 +189,7 @@ if __name__ == "__main__":
         TYPE = "type"
 
     from collections import defaultdict
+    import os
     import argparse
     import json
 
@@ -205,13 +207,15 @@ if __name__ == "__main__":
     input_path = args.input_path
     output_path = args.output_path
 
-    with open(input_path, encoding="utf-8") as graph_json:
-        graph = json.load(graph_json)
+    # if the path doesnt exist, we are going to create an
+    # empty graph in order to make any pipelining easier
+    if not os.path.exists(input_path):
+        graph = {GraphKey.EDGES: [], GraphKey.VERTICES: []}
+    else:
+        with open(input_path, encoding="utf-8") as graph_json:
+            graph = json.load(graph_json)
 
-    def find_vertex(vertex_id):
-        '''Find vertex in graph vertices based on matching _id field'''
-        return next((v for v in graph[GraphKey.VERTICES]
-                     if v[VertexKey.ID] == vertex_id), None)
+    vertex_table = {v[VertexKey.ID]: v for v in graph[GraphKey.VERTICES]}
 
     #########################################
     # auditbeat stored data representations
@@ -268,19 +272,19 @@ if __name__ == "__main__":
     # Enrich the graph Vertices
     ############################
 
+    # allocate pids backwards when we need to fabricate data.
+    # mainly used for FILE_EXEC
+    pid_allocator = 99999
     # fd serial counter
     file_descriptor_counter = 1
 
     for vertex in graph[GraphKey.VERTICES]:
         node_type = vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE]
 
-        # add unique file descriptors to the Files and Sockets
-        if node_type in [VertexType.FILE, VertexType.SOCKET]:
-            vertex[VertexKey.FD_ITEM] = {
-                ItemKey.VALUE: file_descriptor_counter
-            }
+        # add unique file descriptors to the all nodes
+        vertex[VertexKey.FD_ITEM] = {ItemKey.VALUE: file_descriptor_counter}
 
-            file_descriptor_counter += 1
+        file_descriptor_counter += 1
 
     ####################
     # Setup Node Cache
@@ -290,13 +294,16 @@ if __name__ == "__main__":
 
     def cache_fd_vertex(vertex, caller_vertex=None):
         '''Track the creation of resource nodes
-        
+
         FILE nodes:
             opens a file upon first contact
 
         SOCKET nodes:
             opens a socket and then connects the socket to a destination
         '''
+        if vertex == caller_vertex:
+            # dont cache self-loops
+            return
 
         node_type = vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE]
 
@@ -364,7 +371,7 @@ if __name__ == "__main__":
 
     def is_initial_pid(vertex_id):
         '''Find out if this is in the inital procinfo set'''
-        vertex = find_vertex(vertex_id)
+        vertex = vertex_table[vertex_id]
         return vertex[VertexKey.TYPE_ITEM][
             ItemKey.VALUE] == VertexType.PROC and vertex[VertexKey.PID_ITEM][
                 ItemKey.VALUE] in procinfo["pid.txt"]
@@ -373,14 +380,22 @@ if __name__ == "__main__":
     # sorted by timestamp to preserve causal orderings
     for edge in sorted(
             graph[GraphKey.EDGES],
-            key=lambda e: (
-                # sort by timestamp
-                e[EdgeKey.TIME_START_ITEM][ItemKey.VALUE],
-                # processes must come before process edges
-                0 if e[EdgeKey.LABEL] == EdgeLabel.PROC_CREATE else 1,
-                # priority to processes that belong in the system initial state
-                0 if is_initial_pid(e[EdgeKey.OUT_VERTEX]) else 1,
-            ),
+            key=lambda e:
+        (
+            # prioritize edges with a process that way we can initialize
+            # nodes which require a source pid.
+            0 if VertexType.PROC in [
+                vertex_table[e[EdgeKey.OUT_VERTEX]][VertexKey.TYPE_ITEM][
+                    ItemKey.VALUE], vertex_table[e[EdgeKey.IN_VERTEX]][
+                        VertexKey.TYPE_ITEM][ItemKey.VALUE]
+            ] else 1,
+            # sort by timestamp
+            e[EdgeKey.TIME_START_ITEM][ItemKey.VALUE],
+            # processes must come before process edges
+            0 if e[EdgeKey.LABEL] == EdgeLabel.PROC_CREATE else 1,
+            # priority to processes that belong in the system initial state
+            0 if is_initial_pid(e[EdgeKey.OUT_VERTEX]) else 1,
+        ),
     ):
         # NOTES:
         #   exit_code's of 0 should be used because those result in the entry being ignored
@@ -388,15 +403,20 @@ if __name__ == "__main__":
         #
         #   when creating record for PROC_CREATE, the ppid can be inferred using the outVertex pid
         label = edge[EdgeKey.LABEL]
-        if label not in label2syscall:
-            print(f'edge label [{label}] not handled.')
+        if label not in [
+                EdgeLabel.READ,
+                EdgeLabel.WRITE,
+                EdgeLabel.FILE_EXEC,
+                EdgeLabel.PROC_CREATE,
+                EdgeLabel.IP_CONNECTION_EDGE,
+        ]:
+            print(
+                f'edge: id [{edge[EdgeKey.ID]}] label [{label}] not handled.')
             continue
 
-        syscall = label2syscall[label]
-
         in_vertex, out_vertex = (
-            find_vertex(edge[EdgeKey.IN_VERTEX]),
-            find_vertex(edge[EdgeKey.OUT_VERTEX]),
+            vertex_table[edge[EdgeKey.IN_VERTEX]],
+            vertex_table[edge[EdgeKey.OUT_VERTEX]],
         )
 
         if label == EdgeLabel.READ:
@@ -405,7 +425,7 @@ if __name__ == "__main__":
 
             record_builder = AuditBeatJsonBuilder()
             record_builder.set_data(
-                syscall,
+                "read",
                 exit_code=1,
                 a0=out_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
             )
@@ -421,7 +441,7 @@ if __name__ == "__main__":
 
             record_builder = AuditBeatJsonBuilder()
             record_builder.set_data(
-                syscall,
+                "write",
                 exit_code=1,
                 a0=in_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
             )
@@ -433,55 +453,175 @@ if __name__ == "__main__":
 
         elif label == EdgeLabel.PROC_CREATE:
             record_builder = AuditBeatJsonBuilder()
-            record_builder.set_data(syscall)
+            record_builder.set_data("execve")
+
+            in_vertex_type, out_vertex_type = (
+                in_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE],
+                out_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE],
+            )
+
+            # if it is a process spawning another process then use the pid, ppid, exe, and cmd args
+            if in_vertex_type == VertexType.PROC and out_vertex_type == VertexType.PROC:
+                record_builder.set_process(
+                    pid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+                    ppid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+                    exe=in_vertex[VertexKey.EXE_ITEM][ItemKey.VALUE],
+                    args=in_vertex[VertexKey.CMD_ITEM][ItemKey.VALUE].split(),
+                )
+
+            # if a process is interacting with a file in a PROC_CREATE,
+            # then reorient the relationship to from process to file
+            elif in_vertex_type == VertexType.PROC and out_vertex_type != VertexType.PROC or in_vertex_type != VertexType.PROC and out_vertex_type == VertexType.PROC:
+
+                proc_node, fd_node = (
+                    in_vertex,
+                    out_vertex) if in_vertex_type == VertexType.PROC else (
+                        out_vertex, in_vertex)
+
+                fd_node[VertexKey.PID_ITEM] = {ItemKey.VALUE: pid_allocator}
+                pid_allocator -= 1
+
+                if fd_node[VertexKey.TYPE_ITEM][
+                        ItemKey.VALUE] == VertexType.FILE:
+                    exe_path = fd_node[VertexKey.FILENAME_SET_ITEM][
+                        ItemKey.VALUE][0][ItemKey.VALUE]
+                elif fd_node[VertexKey.TYPE_ITEM][
+                        ItemKey.VALUE] == VertexType.SOCKET:
+                    exe_path = proc_node[VertexKey.CMD_ITEM][ItemKey.VALUE]
+
+                record_builder.set_process(
+                    pid=fd_node[VertexKey.PID_ITEM][ItemKey.VALUE],
+                    ppid=proc_node[VertexKey.PID_ITEM][ItemKey.VALUE],
+                    exe=exe_path,
+                )
+
+            # if it is a File, create a new PID to represent the new node
+            elif in_vertex_type != VertexType.PROC and out_vertex_type != VertexType.PROC:
+                in_vertex[VertexKey.PID_ITEM] = {ItemKey.VALUE: pid_allocator}
+                pid_allocator -= 1
+
+                record_builder.set_process(
+                    pid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+                    ppid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+                    exe=in_vertex[VertexKey.FILENAME_SET_ITEM][
+                        ItemKey.VALUE][0][ItemKey.VALUE])
+
+            audits.append(record_builder.build())
+
+        elif label == EdgeLabel.FILE_EXEC:
+            record_builder = AuditBeatJsonBuilder()
+            record_builder.set_data("execve")
+
+            # The IN_VERTEX of FILE_EXEC is the caller,
+            # in which we need to see if the caller is a Process or another File.
+            # if it is a process, then use the EXE as the exe path,
+            # otherwise, use the first item in the filename set, which is the name of the file.
+            if in_vertex[VertexKey.TYPE_ITEM][
+                    ItemKey.VALUE] == VertexType.PROC:
+                exe_path = in_vertex[VertexKey.EXE_ITEM][ItemKey.VALUE]
+            else:
+                exe_path = in_vertex[VertexKey.FILENAME_SET_ITEM][
+                    ItemKey.VALUE][0][ItemKey.VALUE]
+
             record_builder.set_process(
                 pid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
-                ppid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
-                exe=in_vertex[VertexKey.EXE_ITEM][ItemKey.VALUE],
-                args=in_vertex[VertexKey.CMD_ITEM][ItemKey.VALUE].split(),
+                ppid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+                exe=exe_path,
             )
 
             audits.append(record_builder.build())
+
+            # for future encounters, remember the process that
+            # invoked code execution from this file.
+            out_vertex[VertexKey.PID_ITEM] = {
+                ItemKey.VALUE: in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
+            }
+
+        elif label == EdgeLabel.IP_CONNECTION_EDGE:
+            # NOTE:
+            #   this code is very similar to the SocketNode creation
+            #   upon reading or writing to a socket that does not yet exist
+            node_cache.add(in_vertex[VertexKey.ID])
+
+            # create socket fd
+            record_builder = AuditBeatJsonBuilder()
+            record_builder.set_data(
+                "socket",
+                exit_code=in_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
+            )
+            record_builder.set_process(
+                pid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE])
+
+            audits.append(record_builder.build())
+
+            # create connection
+            record_builder = AuditBeatJsonBuilder()
+            record_builder.set_data(
+                "connect",
+                # a0=vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
+                # socket=dict(),
+            )
+            record_builder.set_process(
+                pid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE])
+            record_builder.set_destination(
+                ip=edge[VertexKey.REMOTE_INET_ADDR_ITEM][ItemKey.VALUE],
+                port=edge[VertexKey.REMOTE_PORT_ITEM][ItemKey.VALUE],
+            )
+
+            # for future encounters, remember the process that
+            # invoked code execution from this file.
+            in_vertex[VertexKey.PID_ITEM] = {
+                ItemKey.VALUE: out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
+            }
 
     ##############################################
     # Save data to respective files & directories
     ##############################################
 
     makedirs(output_path, exist_ok=True)
-    with open(pathjoin(output_path, "auditbeat"), "w") as auditfile:
+    with open(pathjoin(output_path, "auditbeat"), "w",
+              encoding="utf-8") as auditfile:
         auditfile.write("\n".join(map(json.dumps, audits)))
 
     # PROCINFO
     procinfo_path = pathjoin(output_path, "procinfo")
     makedirs(procinfo_path, exist_ok=True)
-    with open(pathjoin(procinfo_path, "args.txt"), "w") as proc_args:
+    with open(pathjoin(procinfo_path, "args.txt"), "w",
+              encoding="utf-8") as proc_args:
         proc_args.write("COMMAND")
         proc_args.write("".join(f'\n{x}' for x in procinfo["args.txt"]))
-    with open(pathjoin(procinfo_path, "exe.txt"), "w") as proc_exe:
+    with open(pathjoin(procinfo_path, "exe.txt"), "w",
+              encoding="utf-8") as proc_exe:
         proc_exe.write("COMMAND")
         proc_exe.write("".join(f'\n{x}' for x in procinfo["exe.txt"]))
-    with open(pathjoin(procinfo_path, "general.txt"), "w") as proc_general:
+    with open(pathjoin(procinfo_path, "general.txt"), "w",
+              encoding="utf-8") as proc_general:
         proc_general.write("PLACEHOLDER")
         proc_general.write("".join(f'\n{x}' for x in procinfo["general.txt"]))
         proc_general.write("\x0a")
-    with open(pathjoin(procinfo_path, "pid.txt"), "w") as proc_pid:
+    with open(pathjoin(procinfo_path, "pid.txt"), "w",
+              encoding="utf-8") as proc_pid:
         proc_pid.write("PID")
         proc_pid.write("".join(f'\n{x}' for x in procinfo["pid.txt"]))
-    with open(pathjoin(procinfo_path, "ppid.txt"), "w") as proc_ppid:
+    with open(pathjoin(procinfo_path, "ppid.txt"), "w",
+              encoding="utf-8") as proc_ppid:
         proc_ppid.write("PPID")
         proc_ppid.write("".join(f'\n{x}' for x in procinfo["ppid.txt"]))
 
     # SOCKETINFO
     socketinfo_path = pathjoin(output_path, "socketinfo")
     makedirs(socketinfo_path, exist_ok=True)
-    with open(pathjoin(socketinfo_path, "device.txt"), "w") as socket_device:
+    with open(pathjoin(socketinfo_path, "device.txt"), "w",
+              encoding="utf-8") as socket_device:
         socket_device.write("DEVICE")
         socket_device.write("".join(f'\n{x}'
                                     for x in socketinfo["device.txt"]))
-    with open(pathjoin(socketinfo_path, "name.txt"), "w") as socket_name:
+    with open(pathjoin(socketinfo_path, "name.txt"), "w",
+              encoding="utf-8") as socket_name:
         socket_name.write("NAME")
         socket_name.write("".join(f'\n{x}' for x in socketinfo["name.txt"]))
-    with open(pathjoin(socketinfo_path, "general.txt"), "w") as socket_general:
+    with open(pathjoin(socketinfo_path, "general.txt"), "w",
+              encoding="utf-8") as socket_general:
         socket_general.write("PLACEHOLDER")
         socket_general.write("".join(f'\n{x}'
                                      for x in socketinfo["general.txt"]))
@@ -490,7 +630,8 @@ if __name__ == "__main__":
     fdinfo_path = pathjoin(output_path, "fdinfo")
     makedirs(fdinfo_path, exist_ok=True)
     for name, items in fdinfo.items():
-        with open(pathjoin(fdinfo_path, str(name)), "w") as fddir:
+        with open(pathjoin(fdinfo_path, str(name)), "w",
+                  encoding="utf-8") as fddir:
             padding = 'lr-x------ 1 root root 64 Oct 31 22:04'
             fddir.write(f"PLACEHOLDER\n{padding} .\n{padding} ..")
             fddir.write("".join(f'\n{padding} {pid} -> {desc}'
