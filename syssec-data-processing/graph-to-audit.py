@@ -537,6 +537,15 @@ if __name__ == "__main__":
                 ItemKey.VALUE: in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
             }
 
+            # use the same node caching check as READ and WRITE,
+            # but treat the out_vertex as the vertex which may not yet exist
+            # NOTE:
+            #   need to confirm that this is the right behavior, but it is indeed increasing FILE node count
+            #   post-shadewatcher parsing
+            if out_vertex[VertexKey.ID] not in node_cache:
+                cache_fd_vertex(out_vertex, caller_vertex=in_vertex)
+
+
         elif label == EdgeLabel.IP_CONNECTION_EDGE:
             # NOTE:
             #   this code is very similar to the SocketNode creation
