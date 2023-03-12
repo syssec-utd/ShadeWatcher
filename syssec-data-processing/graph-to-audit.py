@@ -7,6 +7,7 @@ additional procinfo, fdinfo, and socketinfo directories expected by shadewatcher
 from copy import deepcopy
 from os.path import join as pathjoin
 from os import makedirs
+import sys
 
 
 class AuditBeatJsonBuilder:
@@ -203,7 +204,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output-path", default="audit")
     args = parser.parse_args()
 
-    print(args)
+    print(args, file=sys.stderr)
 
     input_path = args.input_path
     output_path = args.output_path
@@ -574,7 +575,10 @@ if __name__ == "__main__":
             }
             
         else:
-            print(f'edge: id [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] not handled.')
+            print(
+                f'edge: id [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] not handled.',
+                file=sys.stderr,
+            )
 
     ##############################################
     # Save data to respective files & directories
