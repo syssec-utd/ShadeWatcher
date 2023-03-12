@@ -26,7 +26,7 @@ for dataset_path in $dataset_paths; do
 
         # init a training sequence
         cd $SHADEWATCHER_DIR/recommend
-        python3.6 driver.py --dataset $audit_name --epoch ${EPOCH:=-30} --threshold ${THRESHOLD:=-1.5} --save_model --show_val --show_test
+        python3.6 driver.py --dataset $audit_name --epoch ${EPOCH:=30} --threshold ${THRESHOLD:=1.5} --save_model --show_val --show_test
         cd - 
 
         # parse each anomaly graph and test against the model
