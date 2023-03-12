@@ -140,6 +140,7 @@ if __name__ == "__main__":
         PROC_CREATE = "PROC_CREATE"
         FILE_EXEC = "FILE_EXEC"
         IP_CONNECTION_EDGE = "IP_CONNECTION_EDGE"
+        READ_WRITE = "READ_WRITE"
 
     ##############################
     # String Enum Key Definitions
@@ -403,16 +404,6 @@ if __name__ == "__main__":
         #
         #   when creating record for PROC_CREATE, the ppid can be inferred using the outVertex pid
         label = edge[EdgeKey.LABEL]
-        if label not in [
-                EdgeLabel.READ,
-                EdgeLabel.WRITE,
-                EdgeLabel.FILE_EXEC,
-                EdgeLabel.PROC_CREATE,
-                EdgeLabel.IP_CONNECTION_EDGE,
-        ]:
-            print(
-                f'edge: id [{edge[EdgeKey.ID]}] label [{label}] not handled.')
-            continue
 
         in_vertex, out_vertex = (
             vertex_table[edge[EdgeKey.IN_VERTEX]],
@@ -545,7 +536,6 @@ if __name__ == "__main__":
             if out_vertex[VertexKey.ID] not in node_cache:
                 cache_fd_vertex(out_vertex, caller_vertex=in_vertex)
 
-
         elif label == EdgeLabel.IP_CONNECTION_EDGE:
             # NOTE:
             #   this code is very similar to the SocketNode creation
@@ -582,6 +572,9 @@ if __name__ == "__main__":
             in_vertex[VertexKey.PID_ITEM] = {
                 ItemKey.VALUE: out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
             }
+            
+        else:
+            print(f'edge: id [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] not handled.')
 
     ##############################################
     # Save data to respective files & directories

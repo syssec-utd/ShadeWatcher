@@ -29,8 +29,14 @@ for dataset_path in $dataset_paths; do
         python3.6 driver.py --dataset $audit_name --epoch ${EPOCH:=30} --threshold ${THRESHOLD:=1.5} --save_model --show_val --show_test
         cd - 
 
+        # outputfile
+        OUTPUT_FILE=${OUTPUT_DIR:="dataset-logs"}/$audit_name-summary.csv
+
+        # start a csv file
+        echo "instance,true_negative,false_positive,hyper parameters" > $OUTPUT_FILE
+
         # parse each anomaly graph and test against the model
-        for anomaly_path in $dataset_path/anomaly; do
+        for anomaly_path in $dataset_path/anomaly/nd*; do
             rm -rf $SHADEWATCHER_DIR/data/examples/$audit_name
             python3.6 ./graph-to-audit.py \
                 $anomaly_path/graph.json \
@@ -65,9 +71,12 @@ for dataset_path in $dataset_paths; do
                 | tail -n 2 \
                 | cut -d' ' -f11))
             cd - 
+            # consolidate statistics
+            true_negative=${stats[0]}
+            false_positive=${stats[1]}
 
-            # print statistics
-            echo "$anomaly_path,${stats[0]},${stats[1]},epoch=$EPOCH threshold=$THRESHOLD" >> ${OUTPUT_DIR:="dataset-logs"}/$audit_name-summary.log
+            # dump to record file
+            echo "$anomaly_path,$true_negative,$false_positive,epoch=$EPOCH threshold=$THRESHOLD" >> $OUTPUT_FILE
         done
     ) & # WIP
 done
