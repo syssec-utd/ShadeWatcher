@@ -76,7 +76,7 @@ for dataset_path in $dataset_paths; do
             false_positive=${stats[1]}
 
             # dump to record file
-            echo "$anomaly_path,$true_negative,$false_positive,epoch=$EPOCH threshold=$THRESHOLD" >> $OUTPUT_FILE
+            echo "$anomaly_path,$true_negative,$false_positive,epoch=$EPOCH threshold=$THRESHOLD" | sed 's/\x1B\[[0-9;]\{1,\}[A-Za-z]//g' >> $OUTPUT_FILE
         done
     ) & # WIP
 done
