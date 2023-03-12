@@ -40,7 +40,7 @@ for graph_dir in $GRAPH_COLLECTION_DIR/nd*; do
 
     # parse the audit into nodes and edges
     cd $SHADEWATCHER_DIR/parse
-    ./driverbeat -dataset $AUDIT -trace ../data/examples/$AUDIT -multithread 8 -storefile
+    ./driverbeat -dataset $AUDIT -trace ../data/examples/$AUDIT -multithread 8 -storefile 
 
     # aggregate the nodes and edges into the aggregates
     # NOTE: capture all edgefact files that may get generated

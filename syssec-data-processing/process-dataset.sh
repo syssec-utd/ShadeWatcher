@@ -102,12 +102,12 @@ max_entity_count=$(( train_entity_count > test_entity_count ? train_entity_count
 
 # adjust the anomaly dataset to reach the max dimensions
 echo "" >> $AGGREGATE_DIR/$ANOMALY_NAME/entity2id.txt
-seq $train_entity_count $(expr $max_entity_count - 1) | awk '{print 0 " " $1}' >> $AGGREGATE_DIR/$ANOMALY_NAME/entity2id.txt
+seq $test_entity_count $(expr $max_entity_count - 1) | awk '{print 0 " " $1}' >> $AGGREGATE_DIR/$ANOMALY_NAME/entity2id.txt
 sed -i "1s/.*/$max_entity_count/" $AGGREGATE_DIR/$ANOMALY_NAME/entity2id.txt
 
 # adjust the benign dataset to reach the max dimensions
 echo "" >> $AGGREGATE_DIR/$BENIGN_NAME/entity2id.txt
-seq $test_entity_count $(expr $max_entity_count - 1) | awk '{print 0 " " $1}' >> $AGGREGATE_DIR/$BENIGN_NAME/entity2id.txt
+seq $train_entity_count $(expr $max_entity_count - 1) | awk '{print 0 " " $1}' >> $AGGREGATE_DIR/$BENIGN_NAME/entity2id.txt
 sed -i "1s/.*/$max_entity_count/" $AGGREGATE_DIR/$BENIGN_NAME/entity2id.txt
 
 # train the benign model
