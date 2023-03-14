@@ -53,8 +53,10 @@ int main(int argc, char **argv)
 		neo4jdb.Neo4jVisKG();
 
 	// store system entities locally
-	if (cfg.storeentity || cfg.storetofile)
+	if (cfg.storeentity || cfg.storetofile) {
 		ls.DumpProcFileSocketEdge2FactSize(file_id - 1);
+		ls.BGStoreToFile();
+	}
 
 	infotbl->FreeInteraction();
 	infotbl->FreeNode();

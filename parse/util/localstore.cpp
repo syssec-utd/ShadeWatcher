@@ -520,3 +520,48 @@ void LocalStore::DumpProcFileSocketEdge2FactSize(int _file_id) {
     edgefact_tmp_file.close();
     std::remove(edgefact_tmp_path.c_str());
 }
+
+
+// Store the BG mappings into a separate folder
+void LocalStore::BGStoreToFile() {
+        // save the nodes
+        std::ofstream bg_nodes(kg_path + "/inter_bg_nodes.txt", std::ios::app);
+        if (!bg_nodes.is_open()) {
+			std::cerr << "Failed to open BG nodes file." << std::endl;
+			return;
+        }
+
+        // save the edges
+        std::ofstream bg_edges(kg_path + "/inter_bg_edges.txt", std::ios::app);
+        if (!bg_edges.is_open()) {
+			std::cerr << "Failed to open BG edges file." << std::endl;
+                return;
+	}
+
+        for (const auto it: infotbl->FileInteractionTable) {
+			bg_nodes << it.first << "," << "FILE" << std::endl;
+
+			for (const auto &edge : *it.second) {
+				const std::string rel = EdgeEnum2String(edge->relation);
+				if (rel.compare("") == 0) continue;
+				
+				bg_edges << edge->n1_hash << "," << edge->n2_hash << "," << rel << std::endl;
+			}
+        }
+
+        for (const auto it: infotbl->ProcInteractionTable) {
+			bg_nodes << it.first << "," << "PROC" << std::endl;
+
+			for (const auto &edge : *it.second) {
+				const std::string rel = EdgeEnum2String(edge->relation);
+				if (rel.compare("") == 0) continue;
+				
+				bg_edges << edge->n1_hash << "," << edge->n2_hash << "," << rel << std::endl;
+			}
+        }
+
+        bg_nodes.close();
+        bg_edges.close();
+
+        std::cout << "finished writing BG graph nodes and edges." << std::endl;
+}
