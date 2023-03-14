@@ -303,6 +303,10 @@ if __name__ == "__main__":
         SOCKET nodes:
             opens a socket and then connects the socket to a destination
         '''
+        if vertex[VertexKey.ID] in node_cache:
+            # skip cached
+            return
+
         if vertex == caller_vertex:
             # dont cache self-loops
             return
@@ -412,8 +416,7 @@ if __name__ == "__main__":
         )
 
         if label == EdgeLabel.READ:
-            if out_vertex[VertexKey.ID] not in node_cache:
-                cache_fd_vertex(out_vertex, caller_vertex=in_vertex)
+            cache_fd_vertex(out_vertex, caller_vertex=in_vertex)
 
             record_builder = AuditBeatJsonBuilder()
             record_builder.set_data(
@@ -428,8 +431,7 @@ if __name__ == "__main__":
             audits.append(record_builder.build())
 
         elif label == EdgeLabel.WRITE:
-            if in_vertex[VertexKey.ID] not in node_cache:
-                cache_fd_vertex(in_vertex, caller_vertex=out_vertex)
+            cache_fd_vertex(in_vertex, caller_vertex=out_vertex)
 
             record_builder = AuditBeatJsonBuilder()
             record_builder.set_data(
@@ -465,10 +467,10 @@ if __name__ == "__main__":
             # then reorient the relationship to from process to file
             elif in_vertex_type == VertexType.PROC and out_vertex_type != VertexType.PROC or in_vertex_type != VertexType.PROC and out_vertex_type == VertexType.PROC:
 
-                proc_node, fd_node = (
-                    in_vertex,
-                    out_vertex) if in_vertex_type == VertexType.PROC else (
-                        out_vertex, in_vertex)
+                if in_vertex_type == VertexType.PROC:
+                    proc_node, fd_node = (in_vertex, out_vertex)
+                else:
+                    proc_node, fd_node = (out_vertex, in_vertex)
 
                 fd_node[VertexKey.PID_ITEM] = {ItemKey.VALUE: pid_allocator}
                 pid_allocator -= 1
@@ -534,13 +536,14 @@ if __name__ == "__main__":
             # NOTE:
             #   need to confirm that this is the right behavior, but it is indeed increasing FILE node count
             #   post-shadewatcher parsing
-            if out_vertex[VertexKey.ID] not in node_cache:
-                cache_fd_vertex(out_vertex, caller_vertex=in_vertex)
+            cache_fd_vertex(out_vertex, caller_vertex=in_vertex)
 
         elif label == EdgeLabel.IP_CONNECTION_EDGE:
             # NOTE:
             #   this code is very similar to the SocketNode creation
             #   upon reading or writing to a socket that does not yet exist
+
+            # TODO: uses immediate caching atm because it is known whether the first node always exists
             node_cache.add(in_vertex[VertexKey.ID])
 
             # create socket fd
@@ -573,6 +576,44 @@ if __name__ == "__main__":
             in_vertex[VertexKey.PID_ITEM] = {
                 ItemKey.VALUE: out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
             }
+        
+        elif label == EdgeLabel.READ_WRITE:
+            if vertex_table[out_vertex[VertexKey.ID]][VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
+                # WRITE relations flow from Process -> Resource
+                cache_fd_vertex(in_vertex, caller_vertex=out_vertex)
+
+                record_builder = AuditBeatJsonBuilder()
+                record_builder.set_data(
+                    "write",
+                    exit_code=1,
+                    a0=in_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
+                )
+                record_builder.set_process(
+                    # Read is a directed edge from the FileNode <- ProcessNode
+                    pid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE])
+
+                audits.append(record_builder.build())
+
+            elif vertex_table[in_vertex[VertexKey.ID]][VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
+                # READ relations flow from Resource -> Process
+                cache_fd_vertex(out_vertex, caller_vertex=in_vertex)
+
+                record_builder = AuditBeatJsonBuilder()
+                record_builder.set_data(
+                    "read",
+                    exit_code=1,
+                    a0=out_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
+                )
+                record_builder.set_process(
+                    pid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE])
+
+                audits.append(record_builder.build())
+
+            else:
+                print(
+                    f'edge: id [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] is not valid because it did not contain a PROCESS node.',
+                    file=sys.stderr,
+                )
             
         else:
             print(
