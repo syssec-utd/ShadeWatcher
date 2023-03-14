@@ -571,6 +571,8 @@ if __name__ == "__main__":
                 port=edge[VertexKey.REMOTE_PORT_ITEM][ItemKey.VALUE],
             )
 
+            audits.append(record_builder.build())
+
             # for future encounters, remember the process that
             # invoked code execution from this file.
             in_vertex[VertexKey.PID_ITEM] = {
@@ -578,6 +580,10 @@ if __name__ == "__main__":
             }
         
         elif label == EdgeLabel.READ_WRITE:
+            # NOTE:
+            #   Overloaded Relation capturing both READ and WRITE events.
+            #   Distinguish between the two cases by identifying which node in the relation is a ProcessNode
+
             if vertex_table[out_vertex[VertexKey.ID]][VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
                 # WRITE relations flow from Process -> Resource
                 cache_fd_vertex(in_vertex, caller_vertex=out_vertex)
