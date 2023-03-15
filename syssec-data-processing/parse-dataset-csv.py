@@ -37,7 +37,10 @@ if __name__ == "__main__":
         df.iloc[0]["false_positive"].astype(float),
     )
 
-    print("metric,fp,tn")
-    print(f"avg,{avg_fp},{avg_tn}")
-    print(f"max,{max_fp},{max_tn}")
-    print(f"min,{min_fp},{min_tn}")
+    case, stage, program, *_ = csv_path[csv_path.index('APT'):].split('-')
+    print("|" + "|".join([
+        case, stage, program,
+        f"{avg_fp:.2f}, {avg_tn:.2f}",
+        f"{max_fp}, {max_tn}",
+        f"{min_fp}, {min_tn}",
+    ]) + "|")
