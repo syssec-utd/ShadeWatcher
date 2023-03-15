@@ -1,10 +1,9 @@
-'''
+"""
 Convert the ShadeWatcher Parser output into one-hot encoded id mappings
 which the ShadeWatcher recommendation GNN can use to train a model.
-'''
+"""
 
 if __name__ == "__main__":
-
     import argparse
     from os import makedirs
     from os.path import join as pathjoin
@@ -45,32 +44,33 @@ if __name__ == "__main__":
             _, node1_id, node2_id, relation_id, *_ = line.split()
 
             inter2id[entity2id[node1_id]].append(entity2id[node2_id])
-            train2id.append((
-                entity2id[node1_id],
-                entity2id[node2_id],
-                relation_id,
-            ))
+            train2id.append(
+                (
+                    entity2id[node1_id],
+                    entity2id[node2_id],
+                    relation_id,
+                )
+            )
 
     makedirs(output_path, exist_ok=True)
 
     with open(pathjoin(output_path, "entity2id.txt"), "w+") as entity2id_file:
         entity2id_file.write(str(len(entity2id)) + "\n")
-        entity2id_file.write("\n".join(
-            [f'{n} {i}' for n, i in entity2id.items()]))
+        entity2id_file.write("\n".join([f"{n} {i}" for n, i in entity2id.items()]))
 
     with open(pathjoin(output_path, "train2id.txt"), "w+") as train2id_file:
         train2id_file.write(str(len(train2id)) + "\n")
-        train2id_file.write("\n".join(
-            [f'{n1} {n2} {r}' for n1, n2, r in train2id]))
+        train2id_file.write("\n".join([f"{n1} {n2} {r}" for n1, n2, r in train2id]))
 
     with open(pathjoin(output_path, "inter2id.txt"), "w+") as inter2id_file:
         inter2id_file.write(str(len(inter2id)) + "\n")
-        inter2id_file.write("\n".join(
-            [f'{n} {" ".join(map(str, ids))}' for n, ids in inter2id.items()]))
+        inter2id_file.write(
+            "\n".join([f'{n} {" ".join(map(str, ids))}' for n, ids in inter2id.items()])
+        )
 
-    with open(pathjoin(output_path, "relation2id.txt"),
-              "w+") as relation2id_file:
-        relation2id_file.write(r"""27
+    with open(pathjoin(output_path, "relation2id.txt"), "w+") as relation2id_file:
+        relation2id_file.write(
+            r"""27
 vfork 0
 clone 1
 execve 2
@@ -97,4 +97,5 @@ count 22
 nametype 23
 version 24
 dev 25
-sizebyte 26""")
+sizebyte 26"""
+        )

@@ -55,6 +55,10 @@ done
 wc -l $AGGREGATE_DIR/nodefact.txt | awk '{print $1}' | cat - $AGGREGATE_DIR/nodefact.txt > /tmp/out && mv /tmp/out $AGGREGATE_DIR/nodefact.txt
 wc -l $AGGREGATE_DIR/edgefact.txt | awk '{print $1}' | cat - $AGGREGATE_DIR/edgefact.txt > /tmp/out && mv /tmp/out $AGGREGATE_DIR/edgefact.txt
 
+# NOTE:
+#   more responsibilities than aggregating.
+#   also performs encoding parser, which may want to be left separate
+
 # generate the one-hot encodings for each dataset
 python3.6 ./encoding-parser.py $AGGREGATE_DIR/edgefact.txt $AGGREGATE_DIR/nodefact.txt -o $AGGREGATE_DIR
 
