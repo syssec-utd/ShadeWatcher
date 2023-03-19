@@ -387,13 +387,19 @@ if __name__ == "__main__":
 
         # find any edge/event that comes causally before
         # this vertex and process it
-        for edge in (
+        for source_edge in (
             edge
             for edge in graph[GraphKey.EDGES]
-            if edge[EdgeKey.LABEL] in [EdgeLabel.PROC_CREATE, EdgeLabel.FILE_EXEC]
-            and proc_vertex[VertexKey.ID] == edge[EdgeKey.OUT_VERTEX]
+            if (
+                edge[EdgeKey.LABEL] == EdgeLabel.PROC_CREATE
+                and proc_vertex[VertexKey.ID] == edge[EdgeKey.IN_VERTEX]
+            )
+            or (
+                edge[EdgeKey.LABEL] == EdgeLabel.FILE_EXEC
+                and proc_vertex[VertexKey.ID] == edge[EdgeKey.OUT_VERTEX]
+            )
         ):
-            handle_edge(edge)
+            handle_edge(source_edge)
 
         if proc_vertex[VertexKey.ID] not in proc_cache:
             # if the vertex is still not in the cache then we didnt succeed in finding it's source.
