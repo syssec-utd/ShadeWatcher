@@ -393,7 +393,7 @@ if __name__ == "__main__":
         ):
             handle_edge(edge)
 
-        if proc_vertex[VertexKey.ID] in vertex_cache:
+        if proc_vertex[VertexKey.ID] not in vertex_cache:
             # if the vertex is still not in the cache then we didnt succeed in finding it's source.
             print(
                 f"process vertex: id [{vertex[VertexKey.ID]}] from graph: [{input_path}] could not be initialized from the graph.",
