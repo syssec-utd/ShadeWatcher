@@ -266,7 +266,8 @@ if __name__ == "__main__":
     # Process initial Vertices
     ############################
 
-    vertex_cache = set()
+    proc_cache = set()
+    fd_cache = set()
 
     # find all processes that are either root nodes of the tree or disconnected
     for vertex in graph[GraphKey.VERTICES]:
@@ -297,7 +298,7 @@ if __name__ == "__main__":
         # Insert empty FD Info for the origin node
         fdinfo[vertex[VertexKey.PID_ITEM][ItemKey.VALUE]] = dict()
 
-        vertex_cache.add(vertex[VertexKey.ID])
+        proc_cache.add(vertex[VertexKey.ID])
 
     ################
     # Process Edges
@@ -341,7 +342,7 @@ if __name__ == "__main__":
         }
 
         # cache created vertex
-        vertex_cache.add(fd_vertex[VertexKey.ID])
+        fd_cache.add(fd_vertex[VertexKey.ID])
 
     def open_socket(fd_vertex, proc_vertex):
         # create socket fd
@@ -376,11 +377,12 @@ if __name__ == "__main__":
         }
 
         # cache created vertex
-        vertex_cache.add(fd_vertex[VertexKey.ID])
+        fd_cache.add(fd_vertex[VertexKey.ID])
 
     def ensure_process(proc_vertex):
-        """Ensure that a process exists by auditing its parent first or adding it as an inital process"""
-        if proc_vertex[VertexKey.ID] in vertex_cache:
+        """Ensure that a process exists within the audit by processing
+        its parent first or adding it as an inital process"""
+        if proc_vertex[VertexKey.ID] in proc_cache:
             return
 
         # find any edge/event that comes causally before
@@ -388,28 +390,28 @@ if __name__ == "__main__":
         for edge in (
             edge
             for edge in graph[GraphKey.EDGES]
-            if edge[EdgeKey.LABEL] == EdgeLabel.PROC_CREATE
+            if edge[EdgeKey.LABEL] in [EdgeLabel.PROC_CREATE, EdgeLabel.FILE_EXEC]
             and proc_vertex[VertexKey.ID] == edge[EdgeKey.OUT_VERTEX]
         ):
             handle_edge(edge)
 
-        if proc_vertex[VertexKey.ID] not in vertex_cache:
+        if proc_vertex[VertexKey.ID] not in proc_cache:
             # if the vertex is still not in the cache then we didnt succeed in finding it's source.
             print(
                 f"process vertex: id [{vertex[VertexKey.ID]}] from graph: [{input_path}] could not be initialized from the graph.",
                 file=sys.stderr,
             )
             # ignore this error for the rest of the execution
-            vertex_cache.add(proc_vertex[VertexKey.ID])
+            proc_cache.add(proc_vertex[VertexKey.ID])
 
     def handle_read_edge(edge):
         proc_vertex, fd_vertex = edge_verticies(edge)
 
-        # ensure the out vertex is a valid process
+        # ensure the out vertex is a coercible into a process
         ensure_process(proc_vertex)
 
         # ensure the in vertex is a valid file or socket
-        if fd_vertex[VertexKey.ID] not in vertex_cache:
+        if fd_vertex[VertexKey.ID] not in fd_cache:
             if fd_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.FILE:
                 open_file(fd_vertex=fd_vertex, proc_vertex=proc_vertex)
             elif fd_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.SOCKET:
@@ -431,17 +433,15 @@ if __name__ == "__main__":
     def handle_write_edge(edge):
         fd_vertex, proc_vertex = edge_verticies(edge)
 
-        # ensure the out vertex is a valid process
+        # ensure the out vertex is a coercible into a process
         ensure_process(proc_vertex)
 
         # ensure the in vertex is a valid file or socket
-        if fd_vertex[VertexKey.ID] not in vertex_cache:
+        if fd_vertex[VertexKey.ID] not in fd_cache:
             if fd_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.FILE:
                 open_file(fd_vertex=fd_vertex, proc_vertex=proc_vertex)
             elif fd_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.SOCKET:
                 open_socket(fd_vertex=fd_vertex, proc_vertex=proc_vertex)
-
-            vertex_cache.add(fd_vertex[VertexKey.ID])
 
         record_builder = AuditBeatJsonBuilder()
         record_builder.set_data(
@@ -476,7 +476,7 @@ if __name__ == "__main__":
                 args=in_vertex[VertexKey.CMD_ITEM][ItemKey.VALUE].split(),
             )
 
-            vertex_cache.add(in_vertex[VertexKey.ID])
+            proc_cache.add(in_vertex[VertexKey.ID])
 
         # if a process is interacting with a file in a PROC_CREATE,
         # then reorient the relationship to from process to file
@@ -503,7 +503,7 @@ if __name__ == "__main__":
                 exe=exe_path,
             )
 
-            vertex_cache.add(fd_vertex[VertexKey.ID])
+            proc_cache.add(fd_vertex[VertexKey.ID])
 
         # if it is a File, create a new PID to represent the new node
         elif in_vertex_type != VertexType.PROC and out_vertex_type != VertexType.PROC:
@@ -515,15 +515,21 @@ if __name__ == "__main__":
                 exe=filenames[0][ItemKey.VALUE],
             )
 
-            vertex_cache.add(in_vertex[VertexKey.ID])
+            proc_cache.add(in_vertex[VertexKey.ID])
 
         audits.append(record_builder.build())
 
     def handle_file_exec_edge(edge):
         exec_caller_vertex, exec_target_vertex = edge_verticies(edge)
 
+        if exec_caller_vertex[VertexKey.ID] not in fd_cache:
+            print(
+                f"process vertex: id [{exec_caller_vertex[VertexKey.ID]}], label: [FILE_EXEC] from graph: [{input_path}] started with a nonexistent file.",
+                file=sys.stderr,
+            )
+
         # ensure target file exists
-        if exec_target_vertex[VertexKey.ID] not in vertex_cache:
+        if exec_target_vertex[VertexKey.ID] not in fd_cache:
             open_file(fd_vertex=exec_target_vertex, proc_vertex=exec_caller_vertex)
 
         # The IN_VERTEX of FILE_EXEC is the caller,
@@ -551,6 +557,8 @@ if __name__ == "__main__":
         exec_target_vertex[VertexKey.PID_ITEM] = {
             ItemKey.VALUE: exec_caller_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
         }
+
+        proc_cache.add(exec_target_vertex[VertexKey.ID])
 
     def handle_ip_connection_edge(edge):
         fd_vertex, proc_vertex = edge_verticies(edge)
