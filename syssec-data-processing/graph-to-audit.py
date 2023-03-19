@@ -468,6 +468,8 @@ if __name__ == "__main__":
                 args=in_vertex[VertexKey.CMD_ITEM][ItemKey.VALUE].split(),
             )
 
+            vertex_cache.add(in_vertex[VertexKey.ID])
+
         # if a process is interacting with a file in a PROC_CREATE,
         # then reorient the relationship to from process to file
         elif (
