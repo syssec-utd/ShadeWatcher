@@ -380,8 +380,11 @@ if __name__ == "__main__":
         fd_cache.add(fd_vertex[VertexKey.ID])
 
     def ensure_process(proc_vertex):
-        """Ensure that a process exists within the audit by processing
-        its parent first or adding it as an inital process"""
+        """
+        Ensure that a vertex is coercible into a process, meaning it exists within the audit.
+
+        Do this by processing its parent first or adding it as an inital process
+        """
         if proc_vertex[VertexKey.ID] in proc_cache:
             return
 
@@ -475,6 +478,8 @@ if __name__ == "__main__":
 
         # if it is a process spawning another process then use the pid, ppid, exe, and cmd args
         if in_vertex_type == VertexType.PROC and out_vertex_type == VertexType.PROC:
+            ensure_process(out_vertex)
+
             record_builder.set_process(
                 pid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
                 ppid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
@@ -497,6 +502,8 @@ if __name__ == "__main__":
             else:
                 proc_vertex, fd_vertex = (out_vertex, in_vertex)
 
+            ensure_process(proc_vertex)
+
             if fd_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.FILE:
                 filenames = fd_vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
                 exe_path = filenames[0][ItemKey.VALUE]
@@ -513,6 +520,8 @@ if __name__ == "__main__":
 
         # if it is a File, create a new PID to represent the new node
         elif in_vertex_type != VertexType.PROC and out_vertex_type != VertexType.PROC:
+            ensure_process(proc_vertex)
+
             filenames = in_vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
 
             record_builder.set_process(
@@ -528,21 +537,14 @@ if __name__ == "__main__":
     def handle_file_exec_edge(edge):
         exec_caller_vertex, exec_target_vertex = edge_verticies(edge)
 
-        if (
-            exec_caller_vertex[VertexKey.ID] not in fd_cache
-            and exec_caller_vertex[VertexKey.ID] not in proc_cache
-        ):
-            print(
-                f"edge: id [{edge[EdgeKey.ID]}], label: [FILE_EXEC] from graph: [{input_path}] has nonexistent file/process caller.",
-                file=sys.stderr,
-            )
+        # The IN_VERTEX of FILE_EXEC is the caller,
+        # in which we need to see if the caller is a Process or another File.
+        ensure_process(exec_caller_vertex)
 
         # ensure target file exists
         if exec_target_vertex[VertexKey.ID] not in fd_cache:
             open_file(fd_vertex=exec_target_vertex, proc_vertex=exec_caller_vertex)
 
-        # The IN_VERTEX of FILE_EXEC is the caller,
-        # in which we need to see if the caller is a Process or another File.
         # if it is a process, then use the EXE as the exe path,
         # otherwise, use the first item in the filename set, which is the name of the file.
         if exec_caller_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
