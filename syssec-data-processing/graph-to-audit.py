@@ -522,9 +522,12 @@ if __name__ == "__main__":
     def handle_file_exec_edge(edge):
         exec_caller_vertex, exec_target_vertex = edge_verticies(edge)
 
-        if exec_caller_vertex[VertexKey.ID] not in fd_cache:
+        if (
+            exec_caller_vertex[VertexKey.ID] not in fd_cache
+            and exec_caller_vertex[VertexKey.ID] not in proc_cache
+        ):
             print(
-                f"process vertex: id [{exec_caller_vertex[VertexKey.ID]}], label: [FILE_EXEC] from graph: [{input_path}] started with a nonexistent file.",
+                f"edge: id [{edge[EdgeKey.ID]}], label: [FILE_EXEC] from graph: [{input_path}] has nonexistent file/process caller.",
                 file=sys.stderr,
             )
 
