@@ -378,23 +378,35 @@ if __name__ == "__main__":
         # cache created vertex
         vertex_cache.add(fd_vertex[VertexKey.ID])
 
-    def ensure_process(vertex):
+    def ensure_process(proc_vertex):
         """Ensure that a process exists by auditing its parent first or adding it as an inital process"""
-        if vertex[VertexKey.ID] in vertex_cache:
+        if proc_vertex[VertexKey.ID] in vertex_cache:
             return
 
-        vertex_cache.add(vertex[VertexKey.ID])
-        return False
+        # find any edge/event that comes causally before
+        # this vertex and process it
+        for edge in (
+            edge
+            for edge in graph[GraphKey.EDGES]
+            if edge[EdgeKey.LABEL] == EdgeLabel.PROC_CREATE
+            and proc_vertex[VertexKey.ID] == edge[EdgeKey.OUT_VERTEX]
+        ):
+            handle_edge(edge)
+
+        if proc_vertex[VertexKey.ID] in vertex_cache:
+            # if the vertex is still not in the cache then we didnt succeed in finding it's source.
+            print(
+                f"process vertex: id [{vertex[VertexKey.ID]}] from graph: [{input_path}] could not be initialized from the graph.",
+                file=sys.stderr,
+            )
+            # ignore this error for the rest of the execution
+            vertex_cache.add(proc_vertex[VertexKey.ID])
 
     def handle_read_edge(edge):
         proc_vertex, fd_vertex = edge_verticies(edge)
 
         # ensure the out vertex is a valid process
-        if proc_vertex[VertexKey.ID] not in vertex_cache:
-            print(
-                f"read edge: id [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] missing process",
-                file=sys.stderr,
-            )
+        ensure_process(proc_vertex)
 
         # ensure the in vertex is a valid file or socket
         if fd_vertex[VertexKey.ID] not in vertex_cache:
@@ -420,11 +432,7 @@ if __name__ == "__main__":
         fd_vertex, proc_vertex = edge_verticies(edge)
 
         # ensure the out vertex is a valid process
-        if proc_vertex[VertexKey.ID] not in vertex_cache:
-            print(
-                f"write edge: id [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] missing process",
-                file=sys.stderr,
-            )
+        ensure_process(proc_vertex)
 
         # ensure the in vertex is a valid file or socket
         if fd_vertex[VertexKey.ID] not in vertex_cache:
@@ -549,6 +557,63 @@ if __name__ == "__main__":
         # ip connection edges are individual socket creation events
         open_socket(fd_vertex=fd_vertex, proc_vertex=proc_vertex)
 
+    def handle_read_write_edge(edge):
+        # distinguish between the two cases by identifying which node in the relation is a ProcessNode
+        in_vertex, out_vertex = edge_verticies(edge)
+
+        if out_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
+            handle_write_edge(edge)
+        elif in_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
+            handle_read_edge(edge)
+        else:
+            print(
+                f"edge: id [{edge[EdgeKey.ID]}] label [READ_WRITE] from graph: [{input_path}] missing a process in a READ_WRITE relation.",
+                file=sys.stderr,
+            )
+
+    edge_cache = set()
+
+    def handle_edge(edge):
+        # NOTES:
+        #   exit_code's of 0 should be used because those result in the entry being ignored
+        #   see: https://github.com/jun-zeng/ShadeWatcher/blob/main/parse/parser/beat/tripletbeat.cpp#L688
+        #
+        #   when creating record for PROC_CREATE, the ppid can be inferred using the outVertex pid
+
+        # skip processed edges
+        if edge[EdgeKey.ID] in edge_cache:
+            return
+
+        label = edge[EdgeKey.LABEL]
+
+        # adds a read interaction from file (OUT) -> process (IN)
+        if label == EdgeLabel.READ:
+            handle_read_edge(edge)
+        # adds a write interaction from process (OUT) -> file (IN)
+        elif label == EdgeLabel.WRITE:
+            handle_write_edge(edge)
+        # signals the creation of one process from another (PARENT) -> (CHILD)
+        elif label == EdgeLabel.PROC_CREATE:
+            handle_proc_create_edge(edge)
+        # signals the creation of one process from a file execution
+        elif label == EdgeLabel.FILE_EXEC:
+            handle_file_exec_edge(edge)
+        # creates a new IP connection socket
+        elif label == EdgeLabel.IP_CONNECTION_EDGE:
+            handle_ip_connection_edge(edge)
+        # overloaded Relation capturing both READ and WRITE events.
+        elif label == EdgeLabel.READ_WRITE:
+            handle_read_write_edge(edge)
+        # unhandled edge label
+        else:
+            return print(
+                f"edge: id [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] not handled.",
+                file=sys.stderr,
+            )
+
+        # mark the edge as seen
+        edge_cache.add(edge[EdgeKey.ID])
+
     def is_initial_pid(vertex):
         """Find out if this is in the inital procinfo set"""
         return (
@@ -578,44 +643,7 @@ if __name__ == "__main__":
             0 if is_initial_pid(vertex_table[e[EdgeKey.OUT_VERTEX]]) else 1,
         ),
     ):
-        # NOTES:
-        #   exit_code's of 0 should be used because those result in the entry being ignored
-        #   see: https://github.com/jun-zeng/ShadeWatcher/blob/main/parse/parser/beat/tripletbeat.cpp#L688
-        #
-        #   when creating record for PROC_CREATE, the ppid can be inferred using the outVertex pid
-        label = edge[EdgeKey.LABEL]
-
-        # adds a read interaction from file (OUT) -> process (IN)
-        if label == EdgeLabel.READ:
-            handle_read_edge(edge)
-        # adds a write interaction from process (OUT) -> file (IN)
-        elif label == EdgeLabel.WRITE:
-            handle_write_edge(edge)
-        # signals the creation of one process from another (PARENT) -> (CHILD)
-        elif label == EdgeLabel.PROC_CREATE:
-            handle_proc_create_edge(edge)
-        # signals the creation of one process from a file execution
-        elif label == EdgeLabel.FILE_EXEC:
-            handle_file_exec_edge(edge)
-        # creates a new IP connection socket
-        elif label == EdgeLabel.IP_CONNECTION_EDGE:
-            handle_ip_connection_edge(edge)
-        # overloaded Relation capturing both READ and WRITE events.
-        # distinguish between the two cases by identifying which node in the relation is a ProcessNode
-        elif label == EdgeLabel.READ_WRITE:
-            in_vertex, out_vertex = edge_verticies(edge)
-
-            if out_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
-                handle_write_edge(edge)
-            elif in_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
-                handle_read_edge(edge)
-
-        # unhandled edge label
-        else:
-            print(
-                f"edge: id [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] not handled.",
-                file=sys.stderr,
-            )
+        handle_edge(edge)
 
     ##############################################
     # Save data to respective files & directories
