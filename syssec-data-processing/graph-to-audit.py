@@ -239,8 +239,34 @@ if __name__ == "__main__":
     }
 
     ############################
+    # Enrich the graph Vertices
+    ############################
+
+    # allocate pids backwards when we need to fabricate data.
+    # mainly used for FILE_EXEC
+    pid_allocator = 99999
+    # file descriptor serial counter
+    fd_allocator = 1
+
+    for vertex in graph[GraphKey.VERTICES]:
+        node_type = vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE]
+
+        # add unique file descriptors to the all nodes
+        vertex[VertexKey.FD_ITEM] = {ItemKey.VALUE: fd_allocator}
+        fd_allocator += 1
+
+        # fabricate PID for resources nodes to avoid errors in edge cases
+        # FILE_EXEC, etc.
+        if VertexKey.PID_ITEM not in vertex:
+            # add unique file descriptors to the all nodes
+            vertex[VertexKey.PID_ITEM] = {ItemKey.VALUE: pid_allocator}
+            pid_allocator -= 1
+
+    ############################
     # Process initial Vertices
     ############################
+
+    vertex_cache = set()
 
     # find all processes that are either root nodes of the tree or disconnected
     for vertex in graph[GraphKey.VERTICES]:
@@ -271,119 +297,258 @@ if __name__ == "__main__":
         # Insert empty FD Info for the origin node
         fdinfo[vertex[VertexKey.PID_ITEM][ItemKey.VALUE]] = dict()
 
-    ############################
-    # Enrich the graph Vertices
-    ############################
-
-    # allocate pids backwards when we need to fabricate data.
-    # mainly used for FILE_EXEC
-    pid_allocator = 99999
-    # fd serial counter
-    file_descriptor_counter = 1
-
-    for vertex in graph[GraphKey.VERTICES]:
-        node_type = vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE]
-
-        # add unique file descriptors to the all nodes
-        vertex[VertexKey.FD_ITEM] = {ItemKey.VALUE: file_descriptor_counter}
-
-        file_descriptor_counter += 1
-
-    ####################
-    # Setup Node Cache
-    ####################
-
-    node_cache = set()
-
-    def cache_fd_vertex(vertex, caller_vertex=None):
-        """Track the creation of resource nodes
-
-        FILE nodes:
-            opens a file upon first contact
-
-        SOCKET nodes:
-            opens a socket and then connects the socket to a destination
-        """
-        if vertex[VertexKey.ID] in node_cache:
-            # skip cached
-            return
-
-        if vertex == caller_vertex:
-            # dont cache self-loops
-            return
-
-        node_type = vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE]
-
-        if node_type == VertexType.FILE:
-            record_builder = AuditBeatJsonBuilder()
-            record_builder.set_data(
-                "open",
-                exit_code=vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
-            )
-            record_builder.set_process(
-                pid=caller_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
-                cwd="/",
-            )
-            filenames = vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
-            record_builder.set_paths(
-                [
-                    AuditBeatJsonBuilder.create_path(
-                        name=filename[ItemKey.VALUE],
-                        # flag: https://github.com/jun-zeng/ShadeWatcher/blob/main/parse/parser/beat/tripletbeat.cpp#L364
-                        nametype="CREATE",
-                    )
-                    for filename in filenames
-                ]
-            )
-
-            audits.append(record_builder.build())
-
-        elif node_type == VertexType.SOCKET:
-            # create socket fd
-            record_builder = AuditBeatJsonBuilder()
-            record_builder.set_data(
-                "socket",
-                exit_code=vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
-            )
-            record_builder.set_process(
-                pid=caller_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-            )
-
-            audits.append(record_builder.build())
-
-            # create connection
-            record_builder = AuditBeatJsonBuilder()
-            record_builder.set_data(
-                "connect",
-                # a0=vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
-                # socket=dict(),
-            )
-            record_builder.set_process(
-                pid=caller_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-            )
-            record_builder.set_destination(
-                ip=vertex[VertexKey.REMOTE_INET_ADDR_ITEM][ItemKey.VALUE],
-                port=vertex[VertexKey.REMOTE_PORT_ITEM][ItemKey.VALUE],
-            )
-
-            audits.append(record_builder.build())
-
-        # set the fd vertex to remember the PID of its creator.
-        # used to handle the cases of FILE_EXEC
-        vertex[VertexKey.PID_ITEM] = {
-            ItemKey.VALUE: caller_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-        }
-
-        # cache the vertex
-        node_cache.add(vertex[VertexKey.ID])
+        vertex_cache.add(vertex[VertexKey.ID])
 
     ################
     # Process Edges
     ################
 
-    def is_initial_pid(vertex_id):
+    def edge_verticies(edge):
+        """Return a tuple of (in_vertex, out_vertex) for the in and out verticies of a graph edge"""
+        return (
+            vertex_table[edge[EdgeKey.IN_VERTEX]],
+            vertex_table[edge[EdgeKey.OUT_VERTEX]],
+        )
+
+    def open_file(fd_vertex, proc_vertex):
+        record_builder = AuditBeatJsonBuilder()
+        record_builder.set_data(
+            "open",
+            exit_code=fd_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
+        )
+        record_builder.set_process(
+            pid=proc_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+            cwd="/",
+        )
+        filenames = fd_vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
+        record_builder.set_paths(
+            [
+                AuditBeatJsonBuilder.create_path(
+                    name=filename[ItemKey.VALUE],
+                    # flag: https://github.com/jun-zeng/ShadeWatcher/blob/main/parse/parser/beat/tripletbeat.cpp#L364
+                    nametype="CREATE",
+                )
+                for filename in filenames
+            ]
+        )
+
+        audits.append(record_builder.build())
+
+        # set the fd vertex to remember the PID of its creator.
+        # used to handle the cases of FILE_EXEC
+        fd_vertex[VertexKey.PID_ITEM] = {
+            ItemKey.VALUE: proc_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
+        }
+
+        # cache created vertex
+        vertex_cache.add(fd_vertex[VertexKey.ID])
+
+    def open_socket(fd_vertex, proc_vertex):
+        # create socket fd
+        record_builder = AuditBeatJsonBuilder()
+        record_builder.set_data(
+            "socket",
+            exit_code=fd_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
+        )
+        record_builder.set_process(pid=proc_vertex[VertexKey.PID_ITEM][ItemKey.VALUE])
+
+        audits.append(record_builder.build())
+
+        # create connection
+        record_builder = AuditBeatJsonBuilder()
+        record_builder.set_data(
+            "connect",
+            # a0=vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
+            # socket=dict(),
+        )
+        record_builder.set_process(pid=proc_vertex[VertexKey.PID_ITEM][ItemKey.VALUE])
+        record_builder.set_destination(
+            ip=fd_vertex[VertexKey.REMOTE_INET_ADDR_ITEM][ItemKey.VALUE],
+            port=fd_vertex[VertexKey.REMOTE_PORT_ITEM][ItemKey.VALUE],
+        )
+
+        audits.append(record_builder.build())
+
+        # set the fd vertex to remember the PID of its creator.
+        # used to handle the cases of FILE_EXEC
+        fd_vertex[VertexKey.PID_ITEM] = {
+            ItemKey.VALUE: proc_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
+        }
+
+        # cache created vertex
+        vertex_cache.add(fd_vertex[VertexKey.ID])
+
+    def ensure_process(vertex):
+        """Ensure that a process exists by auditing its parent first or adding it as an inital process"""
+        if vertex[VertexKey.ID] in vertex_cache:
+            return
+
+        vertex_cache.add(vertex[VertexKey.ID])
+        return False
+
+    def handle_read_edge(edge):
+        proc_vertex, fd_vertex = edge_verticies(edge)
+
+        # ensure the out vertex is a valid process
+        if proc_vertex[VertexKey.ID] not in vertex_cache:
+            print(
+                f"read edge: id [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] missing process",
+                file=sys.stderr,
+            )
+
+        # ensure the in vertex is a valid file or socket
+        if fd_vertex[VertexKey.ID] not in vertex_cache:
+            if fd_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.FILE:
+                open_file(fd_vertex=fd_vertex, proc_vertex=proc_vertex)
+            elif fd_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.SOCKET:
+                open_socket(fd_vertex=fd_vertex, proc_vertex=proc_vertex)
+
+        record_builder = AuditBeatJsonBuilder()
+        record_builder.set_data(
+            "read",
+            exit_code=1,
+            a0=fd_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
+        )
+        record_builder.set_process(
+            # Read is a directed edge from the FileNode -> ProcessNode
+            pid=proc_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
+        )
+
+        audits.append(record_builder.build())
+
+    def handle_write_edge(edge):
+        fd_vertex, proc_vertex = edge_verticies(edge)
+
+        # ensure the out vertex is a valid process
+        if proc_vertex[VertexKey.ID] not in vertex_cache:
+            print(
+                f"write edge: id [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] missing process",
+                file=sys.stderr,
+            )
+
+        # ensure the in vertex is a valid file or socket
+        if fd_vertex[VertexKey.ID] not in vertex_cache:
+            if fd_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.FILE:
+                open_file(fd_vertex=fd_vertex, proc_vertex=proc_vertex)
+            elif fd_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.SOCKET:
+                open_socket(fd_vertex=fd_vertex, proc_vertex=proc_vertex)
+
+            vertex_cache.add(fd_vertex[VertexKey.ID])
+
+        record_builder = AuditBeatJsonBuilder()
+        record_builder.set_data(
+            "write",
+            exit_code=1,
+            a0=proc_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
+        )
+        record_builder.set_process(
+            # Read is a directed edge from the FileNode <- ProcessNode
+            pid=fd_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
+        )
+
+        audits.append(record_builder.build())
+
+    def handle_proc_create_edge(edge):
+        in_vertex, out_vertex = edge_verticies(edge)
+
+        record_builder = AuditBeatJsonBuilder()
+        record_builder.set_data("execve")
+
+        in_vertex_type, out_vertex_type = (
+            in_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE],
+            out_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE],
+        )
+
+        # if it is a process spawning another process then use the pid, ppid, exe, and cmd args
+        if in_vertex_type == VertexType.PROC and out_vertex_type == VertexType.PROC:
+            record_builder.set_process(
+                pid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+                ppid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+                exe=in_vertex[VertexKey.EXE_ITEM][ItemKey.VALUE],
+                args=in_vertex[VertexKey.CMD_ITEM][ItemKey.VALUE].split(),
+            )
+
+        # if a process is interacting with a file in a PROC_CREATE,
+        # then reorient the relationship to from process to file
+        elif (
+            in_vertex_type == VertexType.PROC
+            and out_vertex_type != VertexType.PROC
+            or in_vertex_type != VertexType.PROC
+            and out_vertex_type == VertexType.PROC
+        ):
+            if in_vertex_type == VertexType.PROC:
+                proc_vertex, fd_vertex = (in_vertex, out_vertex)
+            else:
+                proc_vertex, fd_vertex = (out_vertex, in_vertex)
+
+            if fd_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.FILE:
+                filenames = fd_vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
+                exe_path = filenames[0][ItemKey.VALUE]
+            elif fd_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.SOCKET:
+                exe_path = proc_vertex[VertexKey.CMD_ITEM][ItemKey.VALUE]
+
+            record_builder.set_process(
+                pid=fd_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+                ppid=proc_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+                exe=exe_path,
+            )
+
+            vertex_cache.add(fd_vertex[VertexKey.ID])
+
+        # if it is a File, create a new PID to represent the new node
+        elif in_vertex_type != VertexType.PROC and out_vertex_type != VertexType.PROC:
+            filenames = in_vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
+
+            record_builder.set_process(
+                pid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+                ppid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+                exe=filenames[0][ItemKey.VALUE],
+            )
+
+            vertex_cache.add(in_vertex[VertexKey.ID])
+
+        audits.append(record_builder.build())
+
+    def handle_file_exec_edge(edge):
+        exec_caller_vertex, exec_target_vertex = edge_verticies(edge)
+
+        # ensure target file exists
+        if exec_target_vertex[VertexKey.ID] not in vertex_cache:
+            open_file(fd_vertex=exec_target_vertex, proc_vertex=exec_caller_vertex)
+
+        # The IN_VERTEX of FILE_EXEC is the caller,
+        # in which we need to see if the caller is a Process or another File.
+        # if it is a process, then use the EXE as the exe path,
+        # otherwise, use the first item in the filename set, which is the name of the file.
+        if exec_caller_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
+            exe_path = exec_caller_vertex[VertexKey.EXE_ITEM][ItemKey.VALUE]
+        else:
+            filenames = exec_caller_vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
+            exe_path = filenames[0][ItemKey.VALUE]
+
+        record_builder = AuditBeatJsonBuilder()
+        record_builder.set_data("execve")
+        record_builder.set_process(
+            pid=exec_caller_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+            ppid=exec_caller_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+            exe=exe_path,
+        )
+
+        audits.append(record_builder.build())
+
+        # for future encounters, remember the process that
+        # invoked code execution from this file.
+        exec_target_vertex[VertexKey.PID_ITEM] = {
+            ItemKey.VALUE: exec_caller_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
+        }
+
+    def handle_ip_connection_edge(edge):
+        fd_vertex, proc_vertex = edge_verticies(edge)
+        # ip connection edges are individual socket creation events
+        open_socket(fd_vertex=fd_vertex, proc_vertex=proc_vertex)
+
+    def is_initial_pid(vertex):
         """Find out if this is in the inital procinfo set"""
-        vertex = vertex_table[vertex_id]
         return (
             vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC
             and vertex[VertexKey.PID_ITEM][ItemKey.VALUE] in procinfo["pid.txt"]
@@ -408,7 +573,7 @@ if __name__ == "__main__":
             # processes must come before process edges
             0 if e[EdgeKey.LABEL] == EdgeLabel.PROC_CREATE else 1,
             # priority to processes that belong in the system initial state
-            0 if is_initial_pid(e[EdgeKey.OUT_VERTEX]) else 1,
+            0 if is_initial_pid(vertex_table[e[EdgeKey.OUT_VERTEX]]) else 1,
         ),
     ):
         # NOTES:
@@ -418,228 +583,32 @@ if __name__ == "__main__":
         #   when creating record for PROC_CREATE, the ppid can be inferred using the outVertex pid
         label = edge[EdgeKey.LABEL]
 
-        in_vertex, out_vertex = (
-            vertex_table[edge[EdgeKey.IN_VERTEX]],
-            vertex_table[edge[EdgeKey.OUT_VERTEX]],
-        )
-
+        # adds a read interaction from file (OUT) -> process (IN)
         if label == EdgeLabel.READ:
-            cache_fd_vertex(out_vertex, caller_vertex=in_vertex)
-
-            record_builder = AuditBeatJsonBuilder()
-            record_builder.set_data(
-                "read",
-                exit_code=1,
-                a0=out_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
-            )
-            record_builder.set_process(
-                # Read is a directed edge from the FileNode -> ProcessNode
-                pid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-            )
-
-            audits.append(record_builder.build())
-
+            handle_read_edge(edge)
+        # adds a write interaction from process (OUT) -> file (IN)
         elif label == EdgeLabel.WRITE:
-            cache_fd_vertex(in_vertex, caller_vertex=out_vertex)
-
-            record_builder = AuditBeatJsonBuilder()
-            record_builder.set_data(
-                "write",
-                exit_code=1,
-                a0=in_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
-            )
-            record_builder.set_process(
-                # Read is a directed edge from the FileNode <- ProcessNode
-                pid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-            )
-
-            audits.append(record_builder.build())
-
+            handle_write_edge(edge)
+        # signals the creation of one process from another (PARENT) -> (CHILD)
         elif label == EdgeLabel.PROC_CREATE:
-            record_builder = AuditBeatJsonBuilder()
-            record_builder.set_data("execve")
-
-            in_vertex_type, out_vertex_type = (
-                in_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE],
-                out_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE],
-            )
-
-            # if it is a process spawning another process then use the pid, ppid, exe, and cmd args
-            if in_vertex_type == VertexType.PROC and out_vertex_type == VertexType.PROC:
-                record_builder.set_process(
-                    pid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
-                    ppid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
-                    exe=in_vertex[VertexKey.EXE_ITEM][ItemKey.VALUE],
-                    args=in_vertex[VertexKey.CMD_ITEM][ItemKey.VALUE].split(),
-                )
-
-            # if a process is interacting with a file in a PROC_CREATE,
-            # then reorient the relationship to from process to file
-            elif (
-                in_vertex_type == VertexType.PROC
-                and out_vertex_type != VertexType.PROC
-                or in_vertex_type != VertexType.PROC
-                and out_vertex_type == VertexType.PROC
-            ):
-                if in_vertex_type == VertexType.PROC:
-                    proc_node, fd_node = (in_vertex, out_vertex)
-                else:
-                    proc_node, fd_node = (out_vertex, in_vertex)
-
-                fd_node[VertexKey.PID_ITEM] = {ItemKey.VALUE: pid_allocator}
-                pid_allocator -= 1
-
-                if fd_node[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.FILE:
-                    filenames = fd_node[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
-                    exe_path = filenames[0][ItemKey.VALUE]
-                elif fd_node[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.SOCKET:
-                    exe_path = proc_node[VertexKey.CMD_ITEM][ItemKey.VALUE]
-
-                record_builder.set_process(
-                    pid=fd_node[VertexKey.PID_ITEM][ItemKey.VALUE],
-                    ppid=proc_node[VertexKey.PID_ITEM][ItemKey.VALUE],
-                    exe=exe_path,
-                )
-
-            # if it is a File, create a new PID to represent the new node
-            elif (
-                in_vertex_type != VertexType.PROC and out_vertex_type != VertexType.PROC
-            ):
-                in_vertex[VertexKey.PID_ITEM] = {ItemKey.VALUE: pid_allocator}
-                pid_allocator -= 1
-
-                filenames = in_vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
-
-                record_builder.set_process(
-                    pid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
-                    ppid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
-                    exe=filenames[0][ItemKey.VALUE],
-                )
-
-            audits.append(record_builder.build())
-
+            handle_proc_create_edge(edge)
+        # signals the creation of one process from a file execution
         elif label == EdgeLabel.FILE_EXEC:
-            record_builder = AuditBeatJsonBuilder()
-            record_builder.set_data("execve")
-
-            # The IN_VERTEX of FILE_EXEC is the caller,
-            # in which we need to see if the caller is a Process or another File.
-            # if it is a process, then use the EXE as the exe path,
-            # otherwise, use the first item in the filename set, which is the name of the file.
-            if in_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
-                exe_path = in_vertex[VertexKey.EXE_ITEM][ItemKey.VALUE]
-            else:
-                filenames = in_vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
-                exe_path = filenames[0][ItemKey.VALUE]
-
-            record_builder.set_process(
-                pid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
-                ppid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
-                exe=exe_path,
-            )
-
-            audits.append(record_builder.build())
-
-            # for future encounters, remember the process that
-            # invoked code execution from this file.
-            out_vertex[VertexKey.PID_ITEM] = {
-                ItemKey.VALUE: in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-            }
-
-            # use the same node caching check as READ and WRITE,
-            # but treat the out_vertex as the vertex which may not yet exist
-            # NOTE:
-            #   need to confirm that this is the right behavior, but it is indeed increasing FILE node count
-            #   post-shadewatcher parsing
-            cache_fd_vertex(out_vertex, caller_vertex=in_vertex)
-
+            handle_file_exec_edge(edge)
+        # creates a new IP connection socket
         elif label == EdgeLabel.IP_CONNECTION_EDGE:
-            # NOTE:
-            #   this code is very similar to the SocketNode creation
-            #   upon reading or writing to a socket that does not yet exist
-
-            # TODO: uses immediate caching atm because it is known whether the first node always exists
-            node_cache.add(in_vertex[VertexKey.ID])
-
-            # create socket fd
-            record_builder = AuditBeatJsonBuilder()
-            record_builder.set_data(
-                "socket",
-                exit_code=in_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
-            )
-            record_builder.set_process(
-                pid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-            )
-
-            audits.append(record_builder.build())
-
-            # create connection
-            record_builder = AuditBeatJsonBuilder()
-            record_builder.set_data(
-                "connect",
-                # a0=vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
-                # socket=dict(),
-            )
-            record_builder.set_process(
-                pid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-            )
-            record_builder.set_destination(
-                ip=edge[VertexKey.REMOTE_INET_ADDR_ITEM][ItemKey.VALUE],
-                port=edge[VertexKey.REMOTE_PORT_ITEM][ItemKey.VALUE],
-            )
-
-            audits.append(record_builder.build())
-
-            # for future encounters, remember the process that
-            # invoked code execution from this file.
-            in_vertex[VertexKey.PID_ITEM] = {
-                ItemKey.VALUE: out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-            }
-
+            handle_ip_connection_edge(edge)
+        # overloaded Relation capturing both READ and WRITE events.
+        # distinguish between the two cases by identifying which node in the relation is a ProcessNode
         elif label == EdgeLabel.READ_WRITE:
-            # NOTE:
-            #   Overloaded Relation capturing both READ and WRITE events.
-            #   Distinguish between the two cases by identifying which node in the relation is a ProcessNode
+            in_vertex, out_vertex = edge_verticies(edge)
 
             if out_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
-                # WRITE relations flow from Process -> Resource
-                cache_fd_vertex(in_vertex, caller_vertex=out_vertex)
-
-                record_builder = AuditBeatJsonBuilder()
-                record_builder.set_data(
-                    "write",
-                    exit_code=1,
-                    a0=in_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
-                )
-                record_builder.set_process(
-                    # Read is a directed edge from the FileNode <- ProcessNode
-                    pid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-                )
-
-                audits.append(record_builder.build())
-
+                handle_write_edge(edge)
             elif in_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
-                # READ relations flow from Resource -> Process
-                cache_fd_vertex(out_vertex, caller_vertex=in_vertex)
+                handle_read_edge(edge)
 
-                record_builder = AuditBeatJsonBuilder()
-                record_builder.set_data(
-                    "read",
-                    exit_code=1,
-                    a0=out_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
-                )
-                record_builder.set_process(
-                    pid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-                )
-
-                audits.append(record_builder.build())
-
-            else:
-                print(
-                    f"edge: id [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] is not valid because it did not contain a PROCESS node.",
-                    file=sys.stderr,
-                )
-
+        # unhandled edge label
         else:
             print(
                 f"edge: id [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] not handled.",
