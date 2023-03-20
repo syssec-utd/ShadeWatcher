@@ -408,31 +408,39 @@ if __name__ == "__main__":
         of the vertex by processing its parent first or adding it as an inital process.
         """
         if maybe_proc_vertex[VertexKey.ID] in proc_cache:
-            return
+            return True
 
-        # find any edge/event that comes causally before
-        # this vertex and process it
-        for source_edge in (
-            edge
-            for edge in graph[GraphKey.EDGES]
-            if (
-                edge[EdgeKey.LABEL] == EdgeLabel.PROC_CREATE
-                and maybe_proc_vertex[VertexKey.ID] == edge[EdgeKey.IN_VERTEX]
-            )
-            or (
-                edge[EdgeKey.LABEL] == EdgeLabel.FILE_EXEC
-                and maybe_proc_vertex[VertexKey.ID] == edge[EdgeKey.OUT_VERTEX]
-            )
-        ):
-            handle_edge(source_edge)
-
-        if maybe_proc_vertex[VertexKey.ID] not in proc_cache:
-            # if the vertex is still not in the cache then we didnt succeed in finding it's source.
+        try:
+            # find any edge/event that comes causally before
+            # this vertex and process it
+            for source_edge in (
+                edge
+                for edge in graph[GraphKey.EDGES]
+                if (
+                    edge[EdgeKey.LABEL] == EdgeLabel.PROC_CREATE
+                    and maybe_proc_vertex[VertexKey.ID] == edge[EdgeKey.IN_VERTEX]
+                )
+                or (
+                    edge[EdgeKey.LABEL] == EdgeLabel.FILE_EXEC
+                    and maybe_proc_vertex[VertexKey.ID] == edge[EdgeKey.OUT_VERTEX]
+                )
+            ):
+                handle_edge(source_edge)
+                if maybe_proc_vertex[VertexKey.ID] in proc_cache:
+                    return True
+        except RecursionError:
             print(
-                f"vertex: id [{vertex[VertexKey.ID]}] from graph: [{input_path}] could not be initialized from the graph.",
+                f"RecusionError in [ensure_process] for vertex: id [{vertex[VertexKey.ID]}] from graph: [{input_path}].",
                 file=sys.stderr,
             )
-            create_initial_state(maybe_proc_vertex)
+
+        # if the vertex is still not in the cache then we didnt succeed in finding it's source.
+        print(
+            f"triggered allocation of initial state vertex: id [{vertex[VertexKey.ID]}] from graph: [{input_path}].",
+            file=sys.stderr,
+        )
+        create_initial_state(maybe_proc_vertex)
+        return True
 
     def handle_read_edge(edge):
         proc_vertex, fd_vertex = edge_verticies(edge)
