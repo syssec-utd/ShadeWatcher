@@ -189,6 +189,9 @@ if __name__ == "__main__":
         VALUE = "value"
         TYPE = "type"
 
+    # max number of backwards iterations to try and resolve missing resources
+    MAX_BACKTRACE = 5
+
     from collections import defaultdict
     import os
     import argparse
@@ -419,37 +422,37 @@ if __name__ == "__main__":
         if maybe_proc_vertex[VertexKey.ID] in proc_cache:
             return True
 
-        try:
-            # find any edge/event that comes causally before
-            # this vertex and process it
-            for source_edge in (
-                edge
-                for edge in graph[GraphKey.EDGES]
-                if (
-                    edge[EdgeKey.LABEL] == EdgeLabel.PROC_CREATE
-                    and maybe_proc_vertex[VertexKey.ID] == edge[EdgeKey.IN_VERTEX]
-                )
-                or (
-                    edge[EdgeKey.LABEL] == EdgeLabel.FILE_EXEC
-                    and maybe_proc_vertex[VertexKey.ID] == edge[EdgeKey.OUT_VERTEX]
-                )
-            ):
-                handle_edge(source_edge)
-                if maybe_proc_vertex[VertexKey.ID] in proc_cache:
-                    return True
-        except RecursionError:
-            print(
-                f"RecusionError in [ensure_process] for vertex [{vertex[VertexKey.ID]}] from graph: [{input_path}].",
-                file=sys.stderr,
-            )
+        if ensure_process.backtrace_count > MAX_BACKTRACE:
+            create_initial_state(maybe_proc_vertex)
+            return True
 
-        # if the vertex is still not in the cache then we didnt succeed in finding it's source.
-        print(
-            f"triggered allocation of initial state vertex [{vertex[VertexKey.ID]}] from graph: [{input_path}].",
-            file=sys.stderr,
+        ensure_process.backtrace_count += 1
+
+        # find any edge/event that comes causally before
+        # this vertex and process it
+        for source_edge in (
+            edge
+            for edge in graph[GraphKey.EDGES]
+            if (
+                edge[EdgeKey.LABEL] == EdgeLabel.PROC_CREATE
+                and maybe_proc_vertex[VertexKey.ID] == edge[EdgeKey.IN_VERTEX]
+            )
+            or (
+                edge[EdgeKey.LABEL] == EdgeLabel.FILE_EXEC
+                and maybe_proc_vertex[VertexKey.ID] == edge[EdgeKey.OUT_VERTEX]
+            )
+        ):
+            handle_edge(source_edge)
+            if maybe_proc_vertex[VertexKey.ID] in proc_cache:
+                return True
+
+        # by design, this function should never return False
+        raise Exception(
+            f"vertex [{maybe_proc_vertex[VertexKey.ID]}] from graph: [{input_path}] could not initialize itself."
         )
-        create_initial_state(maybe_proc_vertex)
-        return True
+
+    # using function to init variable, since functions are objects
+    ensure_process.backtrace_count = 0
 
     def handle_read_edge(edge):
         proc_vertex, fd_vertex = edge_verticies(edge)
