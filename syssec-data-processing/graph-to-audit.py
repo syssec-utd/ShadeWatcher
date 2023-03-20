@@ -402,10 +402,22 @@ if __name__ == "__main__":
             # socket=dict(),
         )
         record_builder.set_process(pid=proc_vertex[VertexKey.PID_ITEM][ItemKey.VALUE])
-        record_builder.set_destination(
-            ip=fd_vertex[VertexKey.REMOTE_INET_ADDR_ITEM][ItemKey.VALUE],
-            port=fd_vertex[VertexKey.REMOTE_PORT_ITEM][ItemKey.VALUE],
-        )
+        if (
+            VertexKey.REMOTE_INET_ADDR_ITEM in fd_vertex
+            and VertexKey.REMOTE_INET_ADDR_ITEM in fd_vertex
+        ):
+            record_builder.set_destination(
+                ip=fd_vertex[VertexKey.REMOTE_INET_ADDR_ITEM][ItemKey.VALUE],
+                port=fd_vertex[VertexKey.REMOTE_PORT_ITEM][ItemKey.VALUE],
+            )
+        else:
+            print(
+                f"vertex [{fd_vertex[VertexKey.ID]}] from graph: [{input_path}]"
+                " is missing 'REMOTE_INET_ADDR' or 'REMOTE_PORT' making it a valid socket,"
+                " defaulting to 127.0.0.1:8000",
+                file=sys.stderr,
+            )
+            record_builder.set_destination(ip="127.0.0.1", port="8000")
 
         audits.append(record_builder.build())
 
