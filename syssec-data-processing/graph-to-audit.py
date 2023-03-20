@@ -695,7 +695,12 @@ if __name__ == "__main__":
             0 if is_initial_pid(vertex_table[e[EdgeKey.OUT_VERTEX]]) else 1,
         ),
     ):
-        handle_edge(edge)
+        try:
+            handle_edge(edge)
+        except Exception as e:
+            # dont let errors break the entire conversion,
+            # that way we can at least debug the issues with the parial dataset
+            print(e, file=sys.stderr)
 
     ##############################################
     # Save data to respective files & directories
