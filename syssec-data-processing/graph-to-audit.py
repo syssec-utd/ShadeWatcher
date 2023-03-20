@@ -354,7 +354,16 @@ if __name__ == "__main__":
             pid=proc_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
             cwd="/",
         )
-        filenames = fd_vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
+
+        if VertexKey.FILENAME_SET_ITEM in fd_vertex:
+            filenames = fd_vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
+        else:
+            print(
+                f"vertex [{fd_vertex[VertexKey.ID]}] from graph: [{input_path}] is missing 'FILENAME_SET', defaulting to File Descriptor",
+                file=sys.stderr,
+            )
+            filenames = [{ItemKey.VALUE: fd_vertex[VertexKey.FD_ITEM][ItemKey.VALUE]}]
+
         record_builder.set_paths(
             [
                 AuditBeatJsonBuilder.create_path(
@@ -430,13 +439,13 @@ if __name__ == "__main__":
                     return True
         except RecursionError:
             print(
-                f"RecusionError in [ensure_process] for vertex: id [{vertex[VertexKey.ID]}] from graph: [{input_path}].",
+                f"RecusionError in [ensure_process] for vertex [{vertex[VertexKey.ID]}] from graph: [{input_path}].",
                 file=sys.stderr,
             )
 
         # if the vertex is still not in the cache then we didnt succeed in finding it's source.
         print(
-            f"triggered allocation of initial state vertex: id [{vertex[VertexKey.ID]}] from graph: [{input_path}].",
+            f"triggered allocation of initial state vertex [{vertex[VertexKey.ID]}] from graph: [{input_path}].",
             file=sys.stderr,
         )
         create_initial_state(maybe_proc_vertex)
@@ -610,7 +619,7 @@ if __name__ == "__main__":
             handle_read_edge(edge)
         else:
             print(
-                f"edge: id [{edge[EdgeKey.ID]}] label [READ_WRITE] from graph: [{input_path}] missing a process in a READ_WRITE relation.",
+                f"edge [{edge[EdgeKey.ID]}] label [READ_WRITE] from graph: [{input_path}] missing a process in a READ_WRITE relation.",
                 file=sys.stderr,
             )
 
@@ -650,7 +659,7 @@ if __name__ == "__main__":
         # unhandled edge label
         else:
             return print(
-                f"edge: id [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] not handled.",
+                f"edge [{edge[EdgeKey.ID]}] label [{label}] from graph: [{input_path}] not handled.",
                 file=sys.stderr,
             )
 
