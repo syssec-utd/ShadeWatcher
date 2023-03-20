@@ -420,10 +420,12 @@ if __name__ == "__main__":
         of the vertex by processing its parent first or adding it as an inital process.
         """
         if maybe_proc_vertex[VertexKey.ID] in proc_cache:
+            ensure_process.backtrace_count = 0
             return True
 
         if ensure_process.backtrace_count > MAX_BACKTRACE:
             create_initial_state(maybe_proc_vertex)
+            ensure_process.backtrace_count = 0
             return True
 
         ensure_process.backtrace_count += 1
