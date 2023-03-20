@@ -269,6 +269,50 @@ if __name__ == "__main__":
     proc_cache = set()
     fd_cache = set()
 
+    def create_initial_state(init_vertex):
+        # add a process to the initial state
+        if init_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
+            # Proc Load format: https://github.com/jun-zeng/ShadeWatcher/blob/main/parse/parser/kg.cpp#L646
+            procinfo["args.txt"].append(init_vertex[VertexKey.CMD_ITEM][ItemKey.VALUE])
+            # this exe is an absolute path, which might be a problem
+            procinfo["exe.txt"].append(init_vertex[VertexKey.EXE_ITEM][ItemKey.VALUE])
+            procinfo["pid.txt"].append(init_vertex[VertexKey.PID_ITEM][ItemKey.VALUE])
+            procinfo["ppid.txt"].append(1)
+
+            # used to tell ShadeWatcher how many lines to parse:
+            procinfo["general.txt"].append("PLACEHOLDER")
+
+            # Insert empty FD Info for the origin node
+            fdinfo[init_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]] = dict()
+
+            proc_cache.add(init_vertex[VertexKey.ID])
+
+        # fabricate a process to stand-in for the file acting as a process source
+        # NOTE: this does not mean the actual file descriptor is created
+        elif init_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.FILE:
+            # see: https://github.com/jun-zeng/ShadeWatcher/blob/main/parse/parser/beat/tripletbeat.cpp#LL227C5-L227C5
+            # for empty args argument
+            procinfo["args.txt"].append("null")
+            # this exe is an absolute path, which might be a problem
+            filenames = init_vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
+            filename = filenames[0][ItemKey.VALUE]
+            procinfo["exe.txt"].append(filename)
+            procinfo["pid.txt"].append(init_vertex[VertexKey.PID_ITEM][ItemKey.VALUE])
+            procinfo["ppid.txt"].append(1)
+
+            # used to tell ShadeWatcher how many lines to parse:
+            procinfo["general.txt"].append("PLACEHOLDER")
+
+            # Insert empty FD Info for the origin node
+            fdinfo[init_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]] = {
+                init_vertex[VertexKey.FD_ITEM][ItemKey.VALUE]: filename
+            }
+
+            proc_cache.add(init_vertex[VertexKey.ID])
+
+        else:
+            raise Exception("unhandled initialization case")
+
     # find all processes that are either root nodes of the tree or disconnected
     for vertex in graph[GraphKey.VERTICES]:
         # only look at PROC vertices
@@ -285,27 +329,16 @@ if __name__ == "__main__":
         if is_child:
             continue
 
-        # Proc Load format: https://github.com/jun-zeng/ShadeWatcher/blob/main/parse/parser/kg.cpp#L646
-        procinfo["args.txt"].append(vertex[VertexKey.CMD_ITEM][ItemKey.VALUE])
-        # this exe is an absolute path, which might be a problem
-        procinfo["exe.txt"].append(vertex[VertexKey.EXE_ITEM][ItemKey.VALUE])
-        procinfo["pid.txt"].append(vertex[VertexKey.PID_ITEM][ItemKey.VALUE])
-        procinfo["ppid.txt"].append(1)
-
-        # used to tell ShadeWatcher how many lines to parse:
-        procinfo["general.txt"].append("PLACEHOLDER")
-
-        # Insert empty FD Info for the origin node
-        fdinfo[vertex[VertexKey.PID_ITEM][ItemKey.VALUE]] = dict()
-
-        proc_cache.add(vertex[VertexKey.ID])
+        create_initial_state(vertex)
 
     ################
     # Process Edges
     ################
 
     def edge_verticies(edge):
-        """Return a tuple of (in_vertex, out_vertex) for the in and out verticies of a graph edge"""
+        """Returns a tuple of ( `in_vertex`, `out_vertex` )
+        for the forward and backward participants of a graph edge
+        """
         return (
             vertex_table[edge[EdgeKey.IN_VERTEX]],
             vertex_table[edge[EdgeKey.OUT_VERTEX]],
@@ -334,12 +367,6 @@ if __name__ == "__main__":
         )
 
         audits.append(record_builder.build())
-
-        # set the fd vertex to remember the PID of its creator.
-        # used to handle the cases of FILE_EXEC
-        fd_vertex[VertexKey.PID_ITEM] = {
-            ItemKey.VALUE: proc_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-        }
 
         # cache created vertex
         fd_cache.add(fd_vertex[VertexKey.ID])
@@ -370,22 +397,17 @@ if __name__ == "__main__":
 
         audits.append(record_builder.build())
 
-        # set the fd vertex to remember the PID of its creator.
-        # used to handle the cases of FILE_EXEC
-        fd_vertex[VertexKey.PID_ITEM] = {
-            ItemKey.VALUE: proc_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-        }
-
         # cache created vertex
         fd_cache.add(fd_vertex[VertexKey.ID])
 
-    def ensure_process(proc_vertex):
-        """
-        Ensure that a vertex is coercible into a process, meaning it exists within the audit.
+    def ensure_process(maybe_proc_vertex):
+        """Ensure that a vertex is coercible into a existing process,
+        meaning it exists within the audit prior to this call.
 
-        Do this by processing its parent first or adding it as an inital process
+        If the vertex does not pass this check, then perform the initialization
+        of the vertex by processing its parent first or adding it as an inital process.
         """
-        if proc_vertex[VertexKey.ID] in proc_cache:
+        if maybe_proc_vertex[VertexKey.ID] in proc_cache:
             return
 
         # find any edge/event that comes causally before
@@ -395,23 +417,22 @@ if __name__ == "__main__":
             for edge in graph[GraphKey.EDGES]
             if (
                 edge[EdgeKey.LABEL] == EdgeLabel.PROC_CREATE
-                and proc_vertex[VertexKey.ID] == edge[EdgeKey.IN_VERTEX]
+                and maybe_proc_vertex[VertexKey.ID] == edge[EdgeKey.IN_VERTEX]
             )
             or (
                 edge[EdgeKey.LABEL] == EdgeLabel.FILE_EXEC
-                and proc_vertex[VertexKey.ID] == edge[EdgeKey.OUT_VERTEX]
+                and maybe_proc_vertex[VertexKey.ID] == edge[EdgeKey.OUT_VERTEX]
             )
         ):
             handle_edge(source_edge)
 
-        if proc_vertex[VertexKey.ID] not in proc_cache:
+        if maybe_proc_vertex[VertexKey.ID] not in proc_cache:
             # if the vertex is still not in the cache then we didnt succeed in finding it's source.
             print(
-                f"process vertex: id [{vertex[VertexKey.ID]}] from graph: [{input_path}] could not be initialized from the graph.",
+                f"vertex: id [{vertex[VertexKey.ID]}] from graph: [{input_path}] could not be initialized from the graph.",
                 file=sys.stderr,
             )
-            # ignore this error for the rest of the execution
-            proc_cache.add(proc_vertex[VertexKey.ID])
+            create_initial_state(maybe_proc_vertex)
 
     def handle_read_edge(edge):
         proc_vertex, fd_vertex = edge_verticies(edge)
@@ -523,11 +544,12 @@ if __name__ == "__main__":
             ensure_process(proc_vertex)
 
             filenames = in_vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
+            filename = filenames[0][ItemKey.VALUE]
 
             record_builder.set_process(
                 pid=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
                 ppid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
-                exe=filenames[0][ItemKey.VALUE],
+                exe=filename,
             )
 
             proc_cache.add(in_vertex[VertexKey.ID])
@@ -562,12 +584,6 @@ if __name__ == "__main__":
         )
 
         audits.append(record_builder.build())
-
-        # for future encounters, remember the process that
-        # invoked code execution from this file.
-        exec_target_vertex[VertexKey.PID_ITEM] = {
-            ItemKey.VALUE: exec_caller_vertex[VertexKey.PID_ITEM][ItemKey.VALUE]
-        }
 
         proc_cache.add(exec_target_vertex[VertexKey.ID])
 
