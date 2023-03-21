@@ -21,6 +21,9 @@ if __name__ == "__main__":
     # case :: stage :: {GADGET, NON-GADGET}
     case_comparisons = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
+    GADGET_KEY = "GADGET_KEY"
+    NON_GADGET_KEY = "NON_GADGET_KEY"
+
     for csv_path in glob.glob(f"{csv_dir}/*.csv"):
         df = pandas.read_csv(csv_path)
         df = df.assign(
@@ -30,6 +33,10 @@ if __name__ == "__main__":
         df = df.dropna()
         df = df.sort_values(by="detection_ratio")
 
+        avg_tn, avg_fp = (
+            df["true_negative"].sum() / len(df.index),
+            df["false_positive"].sum() / len(df.index),
+        )
         max_tn, max_fp = (
             df.iloc[-1]["true_negative"].astype(float),
             df.iloc[-1]["false_positive"].astype(float),
@@ -42,23 +49,23 @@ if __name__ == "__main__":
 
         case, stage, program, *_ = csv_path[csv_path.index("APT") :].split("-")
 
-        stage_number = "stage3-5" if int(stage[-1]) in [3, 4, 5] else stage
-
         case_number = int("".join(c for c in case if c.isdigit()))
         case_enum = "Enterprise APT" if case_number == 1 else "Supply-Chain APT"
 
         if "GADGET" in case:
-            case_type = "GADGET"
+            case_type = GADGET_KEY
         else:
-            case_type = "NON-GADGET"
+            case_type = NON_GADGET_KEY
 
         # apply +1 smoothing, beacause we are going to do more processing
-        case_comparisons[case_enum][stage_number][case_type].append(
+        case_comparisons[case_enum][stage][case_type].append(
             (
                 max_fp + 1,
                 max_tn + 1,
                 min_fp + 1,
                 min_tn + 1,
+                avg_fp + 1,
+                avg_tn + 1,
             )
         )
 
@@ -68,11 +75,11 @@ if __name__ == "__main__":
         for stage_number, stage in cases.items():
             # find the best improvement among cases in the stage
             best_non_gadget = max(
-                stage["NON-GADGET"],
+                stage[NON_GADGET_KEY],
                 key=lambda e: e[3] / e[2],
             )
             best_gadget = max(
-                stage["GADGET"],
+                stage[GADGET_KEY],
                 key=lambda e: e[1] / e[0],
             )
 
