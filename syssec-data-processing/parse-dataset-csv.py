@@ -8,7 +8,6 @@ Computes the following for a given graph evaluation csv dataset:
 if __name__ == "__main__":
     import argparse
     import pandas
-    import numpy
     import sys
 
     parser = argparse.ArgumentParser()
@@ -20,8 +19,9 @@ if __name__ == "__main__":
     csv_path = args.csv_path
 
     df = pandas.read_csv(csv_path)
-    df = df.assign(detection_ratio=lambda x: x["true_negative"] / x["false_positive"])
-    df = df.replace(numpy.inf, 0)
+    df = df.assign(
+        detection_ratio=lambda x: (x["true_negative"] + 1) / (x["false_positive"] + 1)
+    )
     df = df.sort_values(by="detection_ratio")
 
     avg_tn, avg_fp = (
@@ -37,10 +37,16 @@ if __name__ == "__main__":
         df.iloc[0]["false_positive"].astype(float),
     )
 
-    case, stage, program, *_ = csv_path[csv_path.index('APT'):].split('-')
-    print("|" + "|".join([
-        case, stage, program,
-        f"{avg_fp:.2f}, {avg_tn:.2f}",
-        f"{max_fp}, {max_tn}",
-        f"{min_fp}, {min_tn}",
-    ]) + "|")
+    case, stage, program, *_ = csv_path[csv_path.index("APT") :].split("-")
+    TERMS = "|".join(
+        [
+            case,
+            stage,
+            program,
+            f"{avg_fp:.2f}, {avg_tn:.2f}",
+            f"{max_fp}, {max_tn}",
+            f"{min_fp}, {min_tn}",
+        ]
+    )
+
+    print(f"|{TERMS}|")
