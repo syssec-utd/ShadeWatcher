@@ -404,7 +404,7 @@ if __name__ == "__main__":
         record_builder.set_process(pid=proc_vertex[VertexKey.PID_ITEM][ItemKey.VALUE])
         if (
             VertexKey.REMOTE_INET_ADDR_ITEM in fd_vertex
-            and VertexKey.REMOTE_INET_ADDR_ITEM in fd_vertex
+            and VertexKey.REMOTE_PORT_ITEM in fd_vertex
         ):
             record_builder.set_destination(
                 ip=fd_vertex[VertexKey.REMOTE_INET_ADDR_ITEM][ItemKey.VALUE],
@@ -432,7 +432,6 @@ if __name__ == "__main__":
         of the vertex by processing its parent first or adding it as an inital process.
         """
         if maybe_proc_vertex[VertexKey.ID] in proc_cache:
-            ensure_process.backtrace_count = 0
             return True
 
         if ensure_process.backtrace_count > MAX_BACKTRACE:
