@@ -60,30 +60,35 @@ if __name__ == "__main__":
 
     for _, cases in graphs.items():
         if len(cases) == 2:
+            case1, case2 = cases.keys()
+            if "GADGET" in case1:
+                general, base = cases.values()
+            else:
+                base, general = cases.values()
+
             (
-                (
-                    case,
-                    stage,
-                    program,
-                    avg_tn,
-                    avg_fp,
-                    max_tn,
-                    max_fp,
-                    min_tn,
-                    min_fp,
-                ),
-                (
-                    _,
-                    _,
-                    _,
-                    gadget_avg_tn,
-                    gadget_avg_fp,
-                    gadget_max_tn,
-                    gadget_max_fp,
-                    gadget_min_tn,
-                    gadget_min_fp,
-                ),
-            ) = cases.values()
+                case,
+                stage,
+                program,
+                avg_tn,
+                avg_fp,
+                max_tn,
+                max_fp,
+                min_tn,
+                min_fp,
+            ) = base
+
+            (
+                _,
+                _,
+                _,
+                gadget_avg_tn,
+                gadget_avg_fp,
+                gadget_max_tn,
+                gadget_max_fp,
+                gadget_min_tn,
+                gadget_min_fp,
+            ) = general
 
             # gadget/base
             avg_imp = (gadget_avg_tn * avg_fp) / (gadget_avg_fp * avg_tn) - 1
