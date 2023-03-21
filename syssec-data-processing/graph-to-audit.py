@@ -460,10 +460,11 @@ if __name__ == "__main__":
             if maybe_proc_vertex[VertexKey.ID] in proc_cache:
                 return True
 
-        # by design, this function should never return False
-        raise Exception(
-            f"vertex [{maybe_proc_vertex[VertexKey.ID]}] from graph: [{input_path}] could not initialize itself."
-        )
+        # when the node has no possible parent,
+        # then initialize it as a stand-alone vertex.
+        create_initial_state(maybe_proc_vertex)
+        ensure_process.backtrace_count = 0
+        return True
 
     # using function to init variable, since functions are objects
     ensure_process.backtrace_count = 0
