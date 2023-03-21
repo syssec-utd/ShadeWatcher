@@ -86,9 +86,18 @@ if __name__ == "__main__":
             ) = cases.values()
 
             # gadget/base
-            avg_imp = (gadget_avg_tn * avg_fp) / (gadget_avg_fp * avg_tn) - 1
-            max_imp = (gadget_max_tn * max_fp) / (gadget_max_fp * max_tn) - 1
-            min_imp = (gadget_min_tn * min_fp) / (gadget_min_fp * min_tn) - 1
+            avg_ratio = avg_tn / avg_fp
+            max_ratio = max_tn / max_fp
+            min_ratio = min_tn / min_fp
+
+            avg_ratio_gadget = gadget_avg_tn / gadget_avg_fp
+            max_ratio_gadget = gadget_max_tn / gadget_max_fp
+            min_ratio_gadget = gadget_min_tn / gadget_min_fp
+
+            avg_imp = (avg_ratio_gadget - avg_ratio) / avg_ratio
+            max_imp = (max_ratio_gadget - max_ratio) / max_ratio
+            min_imp = (min_ratio_gadget - min_ratio) / min_ratio
+
             TERMS = "|".join(
                 [
                     stage,
