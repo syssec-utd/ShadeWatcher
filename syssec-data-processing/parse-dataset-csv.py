@@ -22,6 +22,7 @@ if __name__ == "__main__":
     df = df.assign(
         detection_ratio=lambda x: (x["true_negative"] + 1) / (x["false_positive"] + 1)
     )
+    df = df.dropna()
     df = df.sort_values(by="detection_ratio")
 
     avg_tn, avg_fp = (

@@ -26,6 +26,7 @@ if __name__ == "__main__":
             detection_ratio=lambda x: (x["true_negative"] + 1)
             / (x["false_positive"] + 1)
         )
+        df = df.dropna()
         df = df.sort_values(by="detection_ratio")
 
         # apply +1 smoothing, beacause we are going to do more processing
