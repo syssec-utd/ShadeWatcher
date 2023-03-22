@@ -24,27 +24,30 @@ if __name__ == "__main__":
     GADGET_KEY = "GADGET_KEY"
     NON_GADGET_KEY = "NON_GADGET_KEY"
 
+    TRUE_NEGATIVE_KEY = "true_negative"
+    FALSE_POSITIVE_KEY = "false_positive"
+
     for csv_path in glob.glob(f"{csv_dir}/*.csv"):
         df = pandas.read_csv(csv_path)
         df = df.assign(
-            detection_ratio=lambda x: (x["true_negative"] + 1)
-            / (x["false_positive"] + 1)
+            detection_ratio=lambda x: (x[TRUE_NEGATIVE_KEY] + 1)
+            / (x[FALSE_POSITIVE_KEY] + 1)
         )
         df = df.dropna()
         df = df.sort_values(by="detection_ratio")
 
         avg_tn, avg_fp = (
-            df["true_negative"].sum() / len(df.index),
-            df["false_positive"].sum() / len(df.index),
+            df[TRUE_NEGATIVE_KEY].sum() / len(df.index),
+            df[FALSE_POSITIVE_KEY].sum() / len(df.index),
         )
         max_tn, max_fp = (
-            df.iloc[-1]["true_negative"].astype(float),
-            df.iloc[-1]["false_positive"].astype(float),
+            df.iloc[-1][TRUE_NEGATIVE_KEY].astype(float),
+            df.iloc[-1][FALSE_POSITIVE_KEY].astype(float),
         )
 
         min_tn, min_fp = (
-            df.iloc[0]["true_negative"].astype(float),
-            df.iloc[0]["false_positive"].astype(float),
+            df.iloc[0][TRUE_NEGATIVE_KEY].astype(float),
+            df.iloc[0][FALSE_POSITIVE_KEY].astype(float),
         )
 
         case, stage, program, *_ = csv_path[csv_path.index("APT") :].split("-")
