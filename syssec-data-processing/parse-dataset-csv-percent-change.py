@@ -2,6 +2,15 @@
 Computes the percent change between pairing gadget and non-gadget datasets (stage, program)
 """
 
+
+def fpr(fp, tn):
+    return fp / (fp + tn)
+
+
+def percent_change(v1, v2):
+    return v2 / v1 - 1
+
+
 if __name__ == "__main__":
     import argparse
     import pandas
@@ -76,28 +85,38 @@ if __name__ == "__main__":
 
     for case_number, cases in case_comparisons.items():
         for stage_number, stage in cases.items():
+            N_FP, N_TN = 4, 5  # average
+            G_FP, G_TN = 0, 1  # max
+
             # find the best improvement among cases in the stage
             best_non_gadget = max(
                 stage[NON_GADGET_KEY],
-                key=lambda e: e[3] / e[2],
-            )
-            best_gadget = max(
-                stage[GADGET_KEY],
-                key=lambda e: e[1] / e[0],
+                key=lambda e: fpr(fp=e[N_FP], tn=e[N_TN]),
             )
 
-            percent_improvement_tn = ((best_gadget[1] / best_non_gadget[1]) - 1) * 100
-            percent_improvement_fp = ((best_gadget[0] / best_non_gadget[0]) - 1) * 100
+            best_gadget = min(
+                stage[GADGET_KEY],
+                key=lambda e: fpr(fp=e[G_FP], tn=e[G_TN]),
+            )
+
+            fpr_non_gadget = fpr(fp=best_non_gadget[N_FP], tn=best_non_gadget[N_TN])
+            fpr_gadget = fpr(fp=best_gadget[G_FP], tn=best_gadget[G_TN])
+
+            percent_improvement = 100 * percent_change(fpr_non_gadget, fpr_gadget)
 
             table.append(
                 (
                     case_number,
                     stage_number,
-                    f"[{percent_improvement_fp:.0f}%, {percent_improvement_tn:.0f}%]",
+                    f"{fpr_non_gadget:.2f}",
+                    f"{fpr_gadget:.2f}",
+                    f"{percent_improvement:.0f}%",
                 )
             )
 
-    table_df = pandas.DataFrame(table, columns=["APT", "stage", "change"])
-    table_df = table_df.pivot(index="APT", columns="stage", values="change")
-
-    print(table_df.to_markdown())
+    print(
+        pandas.DataFrame(table, columns=["APT", "stage", "FPR", "FPR*", "% change"])
+        .set_index("stage")
+        .sort_values(by=["stage", "APT"])
+        .to_markdown()
+    )
