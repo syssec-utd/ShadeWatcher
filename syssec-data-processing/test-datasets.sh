@@ -1,11 +1,5 @@
 #!/bin/bash -x
 
-# For each set of benign and anomaly graphs in a dataset,
-# collect metrics per anomaly graph (tested on benign) and use to create a csv.
-# then compute avg(fp, tn), max(fp, tn), min(fp, tn)
-
-# set EPOCH for number of epochs
-
 # shell settings
 shopt -s globstar
 set -e
@@ -16,11 +10,11 @@ set -e
 #   /datasets/APT_CASE_1*/stage{1,2,3,4,5}/*
 dataset_paths="$@"
 
-for dataset_path in $dataset_paths; do
+for train_path in $TRAIN_PATHS; do
     # try to parallelize the work
     (
         # for each dataset, concat the benign dataset and train a model
-        audit_data=($(./aggregate-dataset.sh $dataset_path/benign | tail -n 2))
+        audit_data=($(./aggregate-dataset.sh $train_path | tail -n 2))
         audit_name=${audit_data[0]}
         audit_entity_count=${audit_data[1]}
 
@@ -36,7 +30,7 @@ for dataset_path in $dataset_paths; do
         echo "instance,true_negative,false_positive,hyper parameters" > $OUTPUT_FILE
 
         # parse each anomaly graph and test against the model
-        for anomaly_path in $dataset_path/anomaly/nd*; do
+        for anomaly_path in $TEST_PATHS; do
             rm -rf $SHADEWATCHER_DIR/data/examples/$audit_name
             python3.6 ./graph-to-audit.py \
                 $anomaly_path/graph.json \
