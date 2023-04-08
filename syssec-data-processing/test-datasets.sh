@@ -10,7 +10,7 @@ set -e
 #   /datasets/APT_CASE_1*/stage{1,2,3,4,5}/*
 dataset_paths="$@"
 
-for train_path in $TRAIN_PATHS; do
+for train_path in "$TRAIN_PATHS"; do
     # try to parallelize the work
     (
         # for each dataset, concat the benign dataset and train a model
@@ -30,7 +30,7 @@ for train_path in $TRAIN_PATHS; do
         echo "instance,true_negative,false_positive,hyper parameters" > $OUTPUT_FILE
 
         # parse each anomaly graph and test against the model
-        for anomaly_path in $TEST_PATHS; do
+        for anomaly_path in "$TEST_PATHS"; do
             rm -rf $SHADEWATCHER_DIR/data/examples/$audit_name
             python3.6 ./graph-to-audit.py \
                 $anomaly_path/graph.json \
