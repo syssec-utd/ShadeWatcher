@@ -5,6 +5,7 @@ which the ShadeWatcher recommendation GNN can use to train a model.
 
 if __name__ == "__main__":
     import argparse
+    import random
     from os import makedirs
     from os.path import join as pathjoin
     from collections import defaultdict
@@ -14,12 +15,14 @@ if __name__ == "__main__":
     parser.add_argument("nodefile_path")
 
     parser.add_argument("-o", "--output-path", default=".")
+    parser.add_argument("-r", "--randomize-edges", action="store_true")
 
     args = parser.parse_args()
 
     edgefile_path = args.edgefile_path
     nodefile_path = args.nodefile_path
     output_path = args.output_path
+    randomize_edges = args.output_path
 
     entityid_counter = 0
     entity2id = dict()
@@ -42,6 +45,18 @@ if __name__ == "__main__":
 
         for line in lines:
             _, node1_id, node2_id, relation_id, *_ = line.split()
+
+            if randomize_edges:
+                # randomize the relation using one of the relation present
+                # execve 2
+                # recv 7
+                # send 8
+                # open 11
+                # load 12
+                # read 13
+                # write 14
+                # connect 15
+                relation_id = random.choice([2, 7, 8, 11, 13, 14, 15])
 
             inter2id[entity2id[node1_id]].append(entity2id[node2_id])
             train2id.append(
