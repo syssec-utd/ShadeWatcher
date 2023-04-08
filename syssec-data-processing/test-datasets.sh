@@ -1,14 +1,16 @@
 #!/bin/bash -x
 
+# similar to `collect-datasets`,
+# but meant for using custom train and test data paths,
+# which do not follow the benign/anomaly subdirectory structure
+# and may not directly match datasets
+
 # shell settings
 shopt -s globstar
 set -e
 
 # expected to be passed paths to multiple dataset folders
 # use globstar matching or preferred method to fill these paths.
-# for example:
-#   /datasets/APT_CASE_1*/stage{1,2,3,4,5}/*
-dataset_paths="$@"
 
 for train_path in $TRAIN_PATHS; do
     # try to parallelize the work
