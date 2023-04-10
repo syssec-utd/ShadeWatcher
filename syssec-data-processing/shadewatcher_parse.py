@@ -23,9 +23,9 @@ def parse_graph(args):
     # parse the graph into an audit that shadewatcher can handle
     graph_to_audit.parse(graph_path, EXAMPLES_PATH + "/" + instance_name)
     # clean out the shadewatcher encoding directory
-    subprocess.call(["rm", "-rf", ENCODING_PATH + "/" + instance_name])
+    subprocess.run(["rm", "-rf", ENCODING_PATH + "/" + instance_name], check=False)
     # call the shadewatcher parse on the data
-    subprocess.call(
+    subprocess.run(
         [
             "./driverbeat",
             "-dataset",
@@ -37,13 +37,16 @@ def parse_graph(args):
             "-storefile",
         ],
         cwd=PARSER_PATH,
+        check=False,
     )
 
     # copy the files to our shadewatcher store
     os.makedirs(graph_store_dir, exist_ok=True)
-    subprocess.call(["rm", "-rf", graph_store_dir])
-    subprocess.call(["mkdir", "-p", graph_store_dir])
-    subprocess.call(["cp", "-R", ENCODING_PATH + "/" + instance_name, STORE_DIR])
+    subprocess.run(["rm", "-rf", graph_store_dir], check=False)
+    subprocess.run(["mkdir", "-p", graph_store_dir], check=False)
+    subprocess.run(
+        ["cp", "-R", ENCODING_PATH + "/" + instance_name, STORE_DIR], check=False
+    )
 
     # run the one-hot encoder
     encoding_parser.encode(

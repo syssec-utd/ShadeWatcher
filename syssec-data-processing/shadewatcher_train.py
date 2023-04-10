@@ -55,7 +55,9 @@ def train(train_paths, model_name, gnn_args):
     )
 
     # copy the files to shadewatcher
-    subprocess.call(["cp", "-R", STORE_DIR + "/" + model_name, ENCODING_PATH])
+    subprocess.run(
+        ["cp", "-R", STORE_DIR + "/" + model_name, ENCODING_PATH], check=False
+    )
 
     subprocess.check_output(
         [
@@ -70,7 +72,9 @@ def train(train_paths, model_name, gnn_args):
     )
 
     # copy embedding files back to model folder
-    subprocess.call(["cp", "-R", f"{EMBEDDING_PATH}/{model_name}", STORE_DIR])
+    subprocess.run(
+        ["cp", "-R", f"{EMBEDDING_PATH}/{model_name}", STORE_DIR], check=False
+    )
 
 
 if __name__ == "__main__":

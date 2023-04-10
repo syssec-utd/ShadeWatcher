@@ -32,9 +32,11 @@ def pad_file(train_entity_path, test_entity_path):
 
 def evaluate(test_paths, model_path, output_file_path, token):
     # copy the model into the Shadewatcher embeddings directory
-    subprocess.call(["rm", "-rf", f"{EMBEDDING_PATH}/{token}"])
-    subprocess.call(["mkdir", "-p", f"{EMBEDDING_PATH}/{token}"])
-    subprocess.call(["cp", "-R", f"{model_path}/.", f"{EMBEDDING_PATH}/{token}"])
+    subprocess.run(["rm", "-rf", f"{EMBEDDING_PATH}/{token}"], check=False)
+    subprocess.run(["mkdir", "-p", f"{EMBEDDING_PATH}/{token}"], check=False)
+    subprocess.run(
+        ["cp", "-R", f"{model_path}/.", f"{EMBEDDING_PATH}/{token}"], check=False
+    )
 
     with open(output_file_path, "a", encoding="utf-8") as output_file:
         print(
@@ -48,9 +50,11 @@ def evaluate(test_paths, model_path, output_file_path, token):
             continue  # skip past already converted graphs
 
         # copy the encodings from the test instance into the Shadewatcher encodings directory
-        subprocess.call(["rm", "-rf", f"{ENCODING_PATH}/{token}"])
-        subprocess.call(["mkdir", "-p", f"{ENCODING_PATH}/{token}"])
-        subprocess.call(["cp", "-R", f"{test_path}/.", f"{ENCODING_PATH}/{token}"])
+        subprocess.run(["rm", "-rf", f"{ENCODING_PATH}/{token}"], check=False)
+        subprocess.run(["mkdir", "-p", f"{ENCODING_PATH}/{token}"], check=False)
+        subprocess.run(
+            ["cp", "-R", f"{test_path}/.", f"{ENCODING_PATH}/{token}"], check=False
+        )
 
         # pad the test instance to be the size of the model
         pad_file(
@@ -59,7 +63,7 @@ def evaluate(test_paths, model_path, output_file_path, token):
         )
 
         # run the test instance against the model
-        test_output = subprocess.check_output(
+        test_output = subprocess.run(
             [
                 "python3.6",
                 "driver.py",
@@ -75,6 +79,8 @@ def evaluate(test_paths, model_path, output_file_path, token):
                 str(0.89),
             ],
             cwd=GNN_PATH,
+            capture_output=True,
+            check=False,
         )
         print("test_output: ")
         print(test_output)
@@ -86,7 +92,7 @@ def evaluate(test_paths, model_path, output_file_path, token):
         # 2021-11-24 19:43:41,785 |   INFO | metrics: fp_b, value: 7
         tn, fp = (
             int(val[val.rindex(":".encode()) + 2 :])
-            for val in test_output.splitlines()[-2:]
+            for val in test_output.stderr.splitlines()[-2:]
         )
 
         # save the results the a file
@@ -97,8 +103,8 @@ def evaluate(test_paths, model_path, output_file_path, token):
             )
 
     # cleanup Shadewatcher resources
-    subprocess.call(["rm", "-rf", f"{EMBEDDING_PATH}/{token}"])
-    subprocess.call(["rm", "-rf", f"{ENCODING_PATH}/{token}"])
+    subprocess.run(["rm", "-rf", f"{EMBEDDING_PATH}/{token}"], check=False)
+    subprocess.run(["rm", "-rf", f"{ENCODING_PATH}/{token}"], check=False)
 
 
 if __name__ == "__main__":
