@@ -102,7 +102,7 @@ if __name__ == "__main__":
     parser.add_argument("model_path", help="path to the pretrained shadewatcher model")
     parser.add_argument("output_file_path", help="")
     parser.add_argument(
-        "token", help="unique identifier for this run (for collecting data)"
+        "--token", help="unique identifier for this run (for collecting data)"
     )
     args = parser.parse_args()
 
@@ -114,5 +114,6 @@ if __name__ == "__main__":
     token = args.token
     if token is None:
         token = random.randrange(5000, 5000000)
+        print(f"token: {token}")
 
     evaluate(test_paths, model_path, output_file_path, token)
