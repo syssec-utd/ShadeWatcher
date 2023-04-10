@@ -5,6 +5,21 @@ with a custom training set, independent of gadget origins
 * csv output from test-datasets.sh
 """
 
+
+def precision(tp, fp):
+    return tp / (tp + fp)
+
+
+def recall(tp, fn):
+    return tp / (tp + fn)
+
+
+def f1_score(tp, fp, fn):
+    prec = precision(tp, fp)
+    rec = recall(tp, fn)
+    return 2 * prec * rec / (prec + rec)
+
+
 if __name__ == "__main__":
     import argparse
     import pandas
@@ -23,21 +38,34 @@ if __name__ == "__main__":
     print(args, file=sys.stderr)
 
     csv_dir = args.csv_dir
+    smoothing = args.smoothing
 
     TRUE_NEGATIVE_KEY = "true_negative"
     FALSE_POSITIVE_KEY = "false_positive"
 
+    adf = pandas.DataFrame()
     for csv_path in glob.glob(f"{csv_dir}/*.csv"):
-        df = pandas.read_csv(csv_path)
+        print(csv_path)
+        df = pandas.read_csv(csv_path).dropna()
         df = df.assign(
-            detection_ratio=lambda x: (x[TRUE_NEGATIVE_KEY] + 1)
-            / (x[FALSE_POSITIVE_KEY] + 1)
-        ).dropna()
+            f1=lambda x: f1_score(
+                tp=x[FALSE_POSITIVE_KEY] + smoothing,
+                fp=smoothing,
+                fn=x[TRUE_NEGATIVE_KEY] + smoothing,
+            )
+        )
+        df = df.assign(
+            recall=lambda x: recall(
+                tp=x[FALSE_POSITIVE_KEY] + smoothing,
+                fn=x[TRUE_NEGATIVE_KEY] + smoothing,
+            )
+        )
 
         # remap the instance assignment
         df["instance"] = df["instance"].apply(
             lambda x: x[len("/datasets/") : x.index("/anomaly")]
         )
 
-        print(df.groupby("instance").mean().round(2).to_markdown())
+        adf = pandas.concat([adf, df])
 
+    print(adf.groupby("instance").mean().round(2).to_markdown())
