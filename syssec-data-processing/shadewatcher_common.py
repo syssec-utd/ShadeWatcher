@@ -16,6 +16,11 @@ PROCFACT_FILE = "procfact.txt"
 FILEFACT_FILE = "filefact.txt"
 SOCKETFACT_FILE = "socketfact.txt"
 
+ENTITY_FILE = "entity2id.txt"
+INTERACTION_FILE = "inter2id.txt"
+RELATION_FILE = "relation2id.txt"
+TRAIN_FILE = "train2id.txt"
+
 
 def stringify_path(path_str: str):
     """Standard way to convert a path to a valid filename"""

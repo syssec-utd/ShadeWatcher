@@ -2,6 +2,22 @@
 Runs Shadewatcher evaluations against a model
 """
 
+import subprocess
+import random
+import sys
+
+
+def pad_file(train_entity_path, test_entity_path):
+    """Pad anomaly dataset to match the entitiy dimensions of a pretrained model"""
+    train_entity_count = len(read_factfile(train_entity_path))
+    test_entity_count = len(read_factfile(test_entity_path))
+
+    diff = train_entity_count - test_entity_count
+    if diff > 0:
+        with open(test_entity_path, "a", encoding="utf-8") as entity_file:
+            for i in range(diff):
+                print(f"{i + test_entity_count} 0", file=entity_file)
+
 
 def evaluate(test_paths, model_path, output_file_path, token):
     # copy the model into the Shadewatcher embeddings directory
@@ -25,7 +41,11 @@ def evaluate(test_paths, model_path, output_file_path, token):
         subprocess.call(["mkdir", "-p", f"{ENCODING_PATH}/{token}"])
         subprocess.call(["cp", "-R", test_path, f"{ENCODING_PATH}/{token}"])
         # pad the test instance to be the size of the model
-        subprocess.call(["cp", "-R", test_path, f"{ENCODING_PATH}/{token}"])
+        pad_file(
+            train_entity_path=model_path + "/" + ENTITY_FILE,
+            test_entity_path=f"{ENCODING_PATH}/{token}",
+        )
+
         # run the test instance against the model
         test_output = subprocess.check_output(
             [
@@ -71,9 +91,6 @@ def evaluate(test_paths, model_path, output_file_path, token):
 
 if __name__ == "__main__":
     import argparse
-    import subprocess
-    import random
-    import sys
 
     from shadewatcher_common import *
 
