@@ -24,7 +24,8 @@ TRAIN_FILE = "train2id.txt"
 
 def stringify_path(path_str: str):
     """Standard way to convert a path to a valid filename"""
-    return path_str.replace("/", "-").replace("\\", "-")
+    # convert directories to "-" and remove leading "-"
+    return path_str.replace("/", "-").replace("\\", "-").lstrip("-")
 
 
 def read_factfile(path):
