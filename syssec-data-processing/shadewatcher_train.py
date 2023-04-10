@@ -35,6 +35,9 @@ def train(train_paths, model_name, gnn_args):
             for key, facts in slave_facts_dict.items():
                 fact_dict[key].extend(facts)
 
+    # create the aggregation directory using the name of the model
+    os.makedirs(STORE_DIR + "/" + model_name)
+
     # write the aggregated facts to files in the new model directory
     for fact_path, facts in fact_dict.items():
         with open(
@@ -42,9 +45,6 @@ def train(train_paths, model_name, gnn_args):
         ) as edgefact_file:
             fact_lines = "\n".join(facts)
             print(f"{len(facts)}\n{fact_lines}", file=edgefact_file)
-
-    # create the aggregation directory using the name of the model
-    os.makedirs(STORE_DIR + "/" + model_name)
 
     # run the one-hot encoder on the aggregated dataset
     encoding_parser.encode(
