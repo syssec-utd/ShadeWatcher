@@ -33,6 +33,9 @@ for dataset_path in $dataset_paths; do
         audit_name=${audit_data[0]}
         audit_entity_count=${audit_data[1]}
 
+        # prune the training
+        python3.6 ./prune-training.py $SHADEWATCHER_DIR/data/encoding/$audit_name --threshold 2
+
         # init a training sequence
         cd $SHADEWATCHER_DIR/recommend
         python3.6 driver.py --dataset $audit_name --epoch ${EPOCH:=30} --threshold ${THRESHOLD:=1.5} --save_model --show_val --show_test
