@@ -15,7 +15,7 @@ import encoding_parser
 def parse_graph(args):
     graph_path, force_parse = args
     instance_name = stringify_path(graph_path)
-    graph_store_dir = STORE_DIR + "/" + instance_name
+    graph_store_dir = STORE_DIR + "/" + instance_name + "/"  # need trailing /
 
     if os.path.exists(graph_store_dir) and not force_parse:
         return  # skip past already converted graphs
