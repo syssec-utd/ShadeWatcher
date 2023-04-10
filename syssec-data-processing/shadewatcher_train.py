@@ -81,7 +81,9 @@ if __name__ == "__main__":
         help="identifier for this model",
     )
     parser.add_argument(
-        "--gnn_args", help="parameters to the shadewatcher model trainer"
+        "--gnn_args",
+        help="parameters to the shadewatcher model trainer",
+        default="--epoch 30 --threshold 1.5 --show_val --show_test",
     )
     args = parser.parse_args()
 
