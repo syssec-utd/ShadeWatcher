@@ -4,6 +4,12 @@ which the ShadeWatcher recommendation GNN can use to train a model.
 """
 
 
+import random
+from os import makedirs
+from os.path import join as pathjoin
+from collections import defaultdict
+
+
 def encode(edgefile_path, nodefile_path, output_path, randomize_edges):
     entityid_counter = 0
     entity2id = dict()
@@ -99,10 +105,6 @@ sizebyte 26"""
 
 if __name__ == "__main__":
     import argparse
-    import random
-    from os import makedirs
-    from os.path import join as pathjoin
-    from collections import defaultdict
 
     parser = argparse.ArgumentParser()
     parser.add_argument("edgefile_path")

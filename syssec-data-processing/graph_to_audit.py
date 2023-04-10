@@ -201,7 +201,6 @@ MAX_BACKTRACE = 5
 
 from collections import defaultdict
 import os
-import argparse
 import json
 
 
@@ -777,6 +776,8 @@ def parse(input_path, output_path):
 
 
 if __name__ == "__main__":
+    import argparse
+
     ##################
     # Parse Arguments
     ##################
