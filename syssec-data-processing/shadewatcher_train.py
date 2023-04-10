@@ -63,7 +63,7 @@ def train(train_paths, model_name, gnn_args):
     )
 
     # copy embedding files back to model folder
-    subprocess.call(["cp", "-R", f"{ENCODING_PATH}/{model_name}", STORE_DIR])
+    subprocess.call(["cp", "-R", f"{EMBEDDING_PATH}/{model_name}", STORE_DIR])
 
 
 if __name__ == "__main__":
