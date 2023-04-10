@@ -20,3 +20,14 @@ SOCKETFACT_FILE = "socketfact.txt"
 def stringify_path(path_str: str):
     """Standard way to convert a path to a valid filename"""
     return path_str.replace("/", "-").replace("\\", "-")
+
+
+def read_factfile(path):
+    """Read the lines from a file file
+
+    Returns the lines and ignores the count (since it is len(lines))
+    """
+    with open(path, encoding="utf-8") as fact_file:
+        _, *lines = fact_file.read().splitlines()
+
+    return lines

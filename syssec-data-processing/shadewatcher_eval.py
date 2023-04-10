@@ -53,7 +53,8 @@ def evaluate(test_paths, model_path, output_file_path, token):
         # 2021-11-24 19:43:41,785 |   INFO | metrics: tn_b, value: 55
         # 2021-11-24 19:43:41,785 |   INFO | metrics: fp_b, value: 7
         tn, fp = (
-            int(val[val.rindex(":") + 2 :]) for val in test_output.splitlines()[-2:]
+            int(val[val.rindex(":".encode()) + 2 :])
+            for val in test_output.splitlines()[-2:]
         )
 
         # save the results the a file
