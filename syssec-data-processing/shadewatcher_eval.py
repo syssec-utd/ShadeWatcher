@@ -36,9 +36,9 @@ def evaluate(test_paths, model_path, output_file_path, token):
     subprocess.call(["mkdir", "-p", f"{EMBEDDING_PATH}/{token}"])
     subprocess.call(["cp", "-R", f"{model_path}/.", f"{EMBEDDING_PATH}/{token}"])
 
-    with open(output_file_path, "a", encoding="utf-8") as output_file:
+    with open(output_file_path, "w", encoding="utf-8") as output_file:
         print(
-            "instance,true_negative,false_positive,hyper_parameters",
+            "instance,true_negative,false_positive",
             file=output_file,
         )
 
@@ -88,7 +88,7 @@ def evaluate(test_paths, model_path, output_file_path, token):
             int(val[val.rindex(":") + 2 : val.rindex("\x1b")])
             for val in test_output.stderr.decode().splitlines()[-2:]
         )
-        print(f"[fp: {fp}] [tn: {tn}]")
+        print(f"evaluation of {test_path} >> [fp: {fp}] [tn: {tn}]")
 
         # save the results the a file
         with open(output_file_path, "a", encoding="utf-8") as output_file:
@@ -96,6 +96,8 @@ def evaluate(test_paths, model_path, output_file_path, token):
                 f"{stringify_path(test_path)},{tn},{fp}",
                 file=output_file,
             )
+
+    print(f"finished writing results to {output_file_path}")
 
     # cleanup Shadewatcher resources
     subprocess.call(["rm", "-rf", f"{EMBEDDING_PATH}/{token}"])
