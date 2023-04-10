@@ -11,7 +11,7 @@ if __name__ == "__main__":
     from collections import defaultdict
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--threshold", default=2, help="the frequency threshold for training entries before they are dropped")
+    parser.add_argument("--threshold", default=2, type=int, help="the frequency threshold for training entries before they are dropped")
     parser.add_argument("encoding_path", help="path to the directory of the training encodings (usually <SHADEWATCHER_DIR>/data/encoding/...)")
     args = parser.parse_args()
 
