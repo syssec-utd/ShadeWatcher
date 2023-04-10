@@ -47,7 +47,7 @@ mkdir -p $AGGREGATE_DIR
 for graph_dir in $GRAPH_COLLECTION_DIR/nd*; do
     # clean the audit directory and convert the graph to auditbeat
     rm -rf $SHADEWATCHER_DIR/data/examples/$AUDIT
-    python3.6 ./graph-to-audit.py $graph_dir/graph.json -o $SHADEWATCHER_DIR/data/examples/$AUDIT
+    python3.6 ./graph_to_audit.py $graph_dir/graph.json -o $SHADEWATCHER_DIR/data/examples/$AUDIT
     rm -rf $SHADEWATCHER_DIR/data/encoding/$AUDIT
 
     # parse the audit into nodes and edges
@@ -72,7 +72,7 @@ wc -l $AGGREGATE_DIR/edgefact.txt | awk '{print $1}' | cat - $AGGREGATE_DIR/edge
 #   also performs encoding parser, which may want to be left separate
 
 # generate the one-hot encodings for each dataset
-python3.6 ./encoding-parser.py $AGGREGATE_DIR/edgefact.txt $AGGREGATE_DIR/nodefact.txt -o $AGGREGATE_DIR
+python3.6 ./encoding_parser.py $AGGREGATE_DIR/edgefact.txt $AGGREGATE_DIR/nodefact.txt -o $AGGREGATE_DIR
 
 # copy the output back to the audit in shadewatcher
 rm -rf $SHADEWATCHER_DIR/data/encoding/$AUDIT

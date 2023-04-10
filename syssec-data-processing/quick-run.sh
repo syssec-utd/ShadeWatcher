@@ -25,12 +25,12 @@ fi
 
 # don't let all of your examples be removed
 rm -rf $SHADEWATCHER_DIR/data/examples/$AUDIT
-python3.6 graph-to-audit.py $GRAPH_PATH -o $SHADEWATCHER_DIR/data/examples/$AUDIT
+python3.6 graph_to_audit.py $GRAPH_PATH -o $SHADEWATCHER_DIR/data/examples/$AUDIT
 cd $SHADEWATCHER_DIR/parse
 rm -rf $SHADEWATCHER_DIR/data/encoding/$AUDIT
 ./driverbeat -dataset $AUDIT -trace ../data/examples/$AUDIT -multithread 8 -storefile
 cd -
-python3.6 encoding-parser.py $SHADEWATCHER_DIR/data/encoding/$AUDIT/edgefact_0.txt $SHADEWATCHER_DIR/data/encoding/$AUDIT/nodefact.txt -o $SHADEWATCHER_DIR/data/encoding/$AUDIT
+python3.6 encoding_parser.py $SHADEWATCHER_DIR/data/encoding/$AUDIT/edgefact_0.txt $SHADEWATCHER_DIR/data/encoding/$AUDIT/nodefact.txt -o $SHADEWATCHER_DIR/data/encoding/$AUDIT
 cd $SHADEWATCHER_DIR/recommend
 python3.6 driver.py --dataset $AUDIT $REC_ARGS
 cd -

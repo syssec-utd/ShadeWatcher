@@ -44,7 +44,7 @@ for train_path in $TRAIN_PATHS; do
         # parse each anomaly graph and test against the model
         for anomaly_path in $TEST_PATHS; do
             rm -rf $SHADEWATCHER_DIR/data/examples/$audit_name
-            python3.6 ./graph-to-audit.py \
+            python3.6 ./graph_to_audit.py \
                 $anomaly_path/graph.json \
                 -o $SHADEWATCHER_DIR/data/examples/$audit_name
 
@@ -57,7 +57,7 @@ for train_path in $TRAIN_PATHS; do
 
             # generate the one-hot encodings for each dataset
             # NOTE: we are kind of assuming that there is only one edgefact here for single graph instance
-            python3.6 ./encoding-parser.py \
+            python3.6 ./encoding_parser.py \
                 $SHADEWATCHER_DIR/data/encoding/$audit_name/edgefact_0.txt \
                 $SHADEWATCHER_DIR/data/encoding/$audit_name/nodefact.txt \
                 -o $SHADEWATCHER_DIR/data/encoding/$audit_name $ANOMALY_ENCODER_ARGS

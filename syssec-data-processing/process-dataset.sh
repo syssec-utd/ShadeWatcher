@@ -65,7 +65,7 @@ do
     for f in $DATASET_PATH/$graph_type/nd*
     do
         rm -rf $SHADEWATCHER_DIR/data/examples/$AUDIT
-        python3.6 $SCRIPT_DIR/graph-to-audit.py $f/graph.json -o $SHADEWATCHER_DIR/data/examples/$AUDIT
+        python3.6 $SCRIPT_DIR/graph_to_audit.py $f/graph.json -o $SHADEWATCHER_DIR/data/examples/$AUDIT
         rm -rf $SHADEWATCHER_DIR/data/encoding/$AUDIT
 
         cd $SHADEWATCHER_DIR/parse
@@ -92,7 +92,7 @@ done
 # generate the one-hot encodings for each dataset
 for graph_type in $BENIGN_NAME $ANOMALY_NAME
 do
-    python3.6 $SCRIPT_DIR/encoding-parser.py $AGGREGATE_DIR/$graph_type/edgefact.txt $AGGREGATE_DIR/$graph_type/nodefact.txt -o $AGGREGATE_DIR/$graph_type
+    python3.6 $SCRIPT_DIR/encoding_parser.py $AGGREGATE_DIR/$graph_type/edgefact.txt $AGGREGATE_DIR/$graph_type/nodefact.txt -o $AGGREGATE_DIR/$graph_type
 done
 
 # pad the anomaly dataset to match the entity2id.txt size of the benign training set

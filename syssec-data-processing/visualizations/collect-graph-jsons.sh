@@ -19,7 +19,7 @@ for f in $DATASET_PATH/nd*
 do
     rm -rf $SHADEWATCHER_DIR/data/examples/$AUDIT
     # base scripts should be stored in the parent directory
-    python3.6 ../graph-to-audit.py $f/graph.json -o $SHADEWATCHER_DIR/data/examples/$AUDIT
+    python3.6 ../graph_to_audit.py $f/graph.json -o $SHADEWATCHER_DIR/data/examples/$AUDIT
     rm -rf $SHADEWATCHER_DIR/data/encoding/$AUDIT
 
     cd $SHADEWATCHER_DIR/parse

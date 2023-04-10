@@ -129,88 +129,83 @@ class AuditBeatJsonBuilder:
         return path
 
 
-if __name__ == "__main__":
-    #########################################
-    # Syssec -> ShadeWatcher syscall mapping
-    #########################################
+#########################################
+# Syssec -> ShadeWatcher syscall mapping
+#########################################
 
-    class EdgeLabel:
-        READ = "READ"
-        WRITE = "WRITE"
-        PROC_CREATE = "PROC_CREATE"
-        FILE_EXEC = "FILE_EXEC"
-        IP_CONNECTION_EDGE = "IP_CONNECTION_EDGE"
-        READ_WRITE = "READ_WRITE"
 
-    ##############################
-    # String Enum Key Definitions
-    ##############################
+class EdgeLabel:
+    READ = "READ"
+    WRITE = "WRITE"
+    PROC_CREATE = "PROC_CREATE"
+    FILE_EXEC = "FILE_EXEC"
+    IP_CONNECTION_EDGE = "IP_CONNECTION_EDGE"
+    READ_WRITE = "READ_WRITE"
 
-    class VertexType:
-        FILE = "FileNode"
-        PROC = "ProcessNode"
-        SOCKET = "SocketChannelNode"
 
-    class GraphKey:
-        EDGES = "edges"
-        VERTICES = "vertices"
+##############################
+# String Enum Key Definitions
+##############################
 
-    class EdgeKey:
-        ID = "_id"
-        LABEL = "_label"
-        OUT_VERTEX = "_outV"
-        IN_VERTEX = "_inV"
-        TIME_START_ITEM = "TIME_START"
 
-        # part of IP_CONNECTION_EDGE
-        REMOTE_INET_ADDR_ITEM = "REMOTE_INET_ADDR"
-        REMOTE_PORT_ITEM = "REMOTE_PORT"
-        LOCAL_INET_ADDR_ITEM = "LOCAL_INET_ADDR"
-        LOCAL_PORT_ITEM = "LOCAL_PORT"
+class VertexType:
+    FILE = "FileNode"
+    PROC = "ProcessNode"
+    SOCKET = "SocketChannelNode"
 
-    class VertexKey:
-        # Original Dataset
-        ID = "_id"
-        PID_ITEM = "PID"
-        TYPE_ITEM = "TYPE"
-        EXE_ITEM = "EXE_NAME"
-        PATH_NAME_ITEM = "PATH_NAME"
-        CMD_ITEM = "CMD"
-        REMOTE_INET_ADDR_ITEM = "REMOTE_INET_ADDR"
-        REMOTE_PORT_ITEM = "REMOTE_PORT"
-        LOCAL_INET_ADDR_ITEM = "LOCAL_INET_ADDR"
-        LOCAL_PORT_ITEM = "LOCAL_PORT"
-        FILENAME_SET_ITEM = "FILENAME_SET"
-        BT_HOPCOUNT_ITEM = "BT_HOPCOUNT"
-        # Extended Dataset
-        FD_ITEM = "FD"
 
-    class ItemKey:
-        VALUE = "value"
-        TYPE = "type"
+class GraphKey:
+    EDGES = "edges"
+    VERTICES = "vertices"
 
-    # max number of backwards iterations to try and resolve missing resources
-    MAX_BACKTRACE = 5
 
-    from collections import defaultdict
-    import os
-    import argparse
-    import json
+class EdgeKey:
+    ID = "_id"
+    LABEL = "_label"
+    OUT_VERTEX = "_outV"
+    IN_VERTEX = "_inV"
+    TIME_START_ITEM = "TIME_START"
 
-    ##################
-    # Parse Arguments
-    ##################
+    # part of IP_CONNECTION_EDGE
+    REMOTE_INET_ADDR_ITEM = "REMOTE_INET_ADDR"
+    REMOTE_PORT_ITEM = "REMOTE_PORT"
+    LOCAL_INET_ADDR_ITEM = "LOCAL_INET_ADDR"
+    LOCAL_PORT_ITEM = "LOCAL_PORT"
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("input_path", default="graph.json")
-    parser.add_argument("-o", "--output-path", default="audit")
-    args = parser.parse_args()
 
-    print(args, file=sys.stderr)
+class VertexKey:
+    # Original Dataset
+    ID = "_id"
+    PID_ITEM = "PID"
+    TYPE_ITEM = "TYPE"
+    EXE_ITEM = "EXE_NAME"
+    PATH_NAME_ITEM = "PATH_NAME"
+    CMD_ITEM = "CMD"
+    REMOTE_INET_ADDR_ITEM = "REMOTE_INET_ADDR"
+    REMOTE_PORT_ITEM = "REMOTE_PORT"
+    LOCAL_INET_ADDR_ITEM = "LOCAL_INET_ADDR"
+    LOCAL_PORT_ITEM = "LOCAL_PORT"
+    FILENAME_SET_ITEM = "FILENAME_SET"
+    BT_HOPCOUNT_ITEM = "BT_HOPCOUNT"
+    # Extended Dataset
+    FD_ITEM = "FD"
 
-    input_path = args.input_path
-    output_path = args.output_path
 
+class ItemKey:
+    VALUE = "value"
+    TYPE = "type"
+
+
+# max number of backwards iterations to try and resolve missing resources
+MAX_BACKTRACE = 5
+
+from collections import defaultdict
+import os
+import argparse
+import json
+
+
+def parse(input_path, output_path):
     # if the path doesnt exist, we are going to create an
     # empty graph in order to make any pipelining easier
     if not os.path.exists(input_path):
@@ -779,3 +774,21 @@ if __name__ == "__main__":
                 "".join(f"\n{PADDING} {pid} -> {desc}" for pid, desc in items.items())
             )
             fddir.write("\x0a")
+
+
+if __name__ == "__main__":
+    ##################
+    # Parse Arguments
+    ##################
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input_path", default="graph.json")
+    parser.add_argument("-o", "--output-path", default="audit")
+    args = parser.parse_args()
+
+    print(args, file=sys.stderr)
+
+    input_path = args.input_path
+    output_path = args.output_path
+
+    parse(input_path=input_path, output_path=output_path)

@@ -3,27 +3,8 @@ Convert the ShadeWatcher Parser output into one-hot encoded id mappings
 which the ShadeWatcher recommendation GNN can use to train a model.
 """
 
-if __name__ == "__main__":
-    import argparse
-    import random
-    from os import makedirs
-    from os.path import join as pathjoin
-    from collections import defaultdict
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("edgefile_path")
-    parser.add_argument("nodefile_path")
-
-    parser.add_argument("-o", "--output-path", default=".")
-    parser.add_argument("-r", "--randomize-edges", action="store_true")
-
-    args = parser.parse_args()
-
-    edgefile_path = args.edgefile_path
-    nodefile_path = args.nodefile_path
-    output_path = args.output_path
-    randomize_edges = args.output_path
-
+def encode(edgefile_path, nodefile_path, output_path, randomize_edges):
     entityid_counter = 0
     entity2id = dict()
     inter2id = defaultdict(list)
@@ -114,3 +95,27 @@ version 24
 dev 25
 sizebyte 26"""
         )
+
+
+if __name__ == "__main__":
+    import argparse
+    import random
+    from os import makedirs
+    from os.path import join as pathjoin
+    from collections import defaultdict
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("edgefile_path")
+    parser.add_argument("nodefile_path")
+
+    parser.add_argument("-o", "--output-path", default=".")
+    parser.add_argument("-r", "--randomize-edges", action="store_true")
+
+    args = parser.parse_args()
+
+    edgefile_path = args.edgefile_path
+    nodefile_path = args.nodefile_path
+    output_path = args.output_path
+    randomize_edges = args.output_path
+
+    encode(edgefile_path, nodefile_path, output_path, randomize_edges)
