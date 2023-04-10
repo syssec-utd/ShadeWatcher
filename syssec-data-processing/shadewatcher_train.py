@@ -58,7 +58,14 @@ def train(train_paths, model_name, gnn_args):
     subprocess.call(["cp", "-R", STORE_DIR + "/" + model_name, ENCODING_PATH])
 
     subprocess.check_output(
-        ["python3.6", "driver.py", "--dataset", model_name, *gnn_args.split()],
+        [
+            "python3.6",
+            "driver.py",
+            "--dataset",
+            model_name,
+            "--save_model",
+            *gnn_args.split(),
+        ],
         cwd=GNN_PATH,
     )
 
