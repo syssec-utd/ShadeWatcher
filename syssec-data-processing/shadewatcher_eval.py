@@ -18,8 +18,16 @@ def pad_file(train_entity_path, test_entity_path):
     diff = train_entity_count - test_entity_count
     if diff > 0:
         with open(test_entity_path, "a", encoding="utf-8") as entity_file:
+            print("", file=entity_file)
             for i in range(diff):
-                print(f"{i + test_entity_count} 0", file=entity_file)
+                print(f"0 {i + test_entity_count}", file=entity_file)
+
+        with open(test_entity_path, encoding="utf-8") as entity_file:
+            lines = entity_file.read().splitlines()
+
+        with open(test_entity_path, "w", encoding="utf-8") as entity_file:
+            print(len(lines) - 1, file=entity_file)
+            print("\n".join(lines[1:]), file=entity_file)
 
 
 def evaluate(test_paths, model_path, output_file_path, token):
