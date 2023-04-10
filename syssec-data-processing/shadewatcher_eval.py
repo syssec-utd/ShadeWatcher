@@ -36,14 +36,15 @@ def evaluate(test_paths, model_path, output_file_path, token):
             print(test_path, "is not a valid path.")
             continue  # skip past already converted graphs
 
-        # copy the encodings from the test instance into the Shadewatcher embeddings directory
+        # copy the encodings from the test instance into the Shadewatcher encodings directory
         subprocess.call(["rm", "-rf", f"{ENCODING_PATH}/{token}"])
         subprocess.call(["mkdir", "-p", f"{ENCODING_PATH}/{token}"])
         subprocess.call(["cp", "-R", test_path, f"{ENCODING_PATH}/{token}"])
+
         # pad the test instance to be the size of the model
         pad_file(
-            train_entity_path=model_path + "/" + ENTITY_FILE,
-            test_entity_path=f"{ENCODING_PATH}/{token}",
+            train_entity_path=f"{model_path}/{ENTITY_FILE}",
+            test_entity_path=f"{ENCODING_PATH}/{token}/{ENTITY_FILE}",
         )
 
         # run the test instance against the model
