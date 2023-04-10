@@ -39,18 +39,19 @@ def parse_graph(args):
         ],
         cwd=PARSER_PATH,
     )
-    # run the one-hot encoder
-    encoding_parser.encode(
-        edgefile_path=ENCODING_PATH + "/" + instance_name + "/" + EDGEFACT_FILE,
-        nodefile_path=ENCODING_PATH + "/" + instance_name + "/" + NODEFACT_FILE,
-        output_path=ENCODING_PATH + "/" + instance_name,
-        randomize_edges=False,
-    )
 
     # copy the files to our shadewatcher store
     subprocess.call(["rm", "-rf", graph_store_dir])
     subprocess.call(["mkdir", "-p", graph_store_dir])
     subprocess.call(["cp", "-R", ENCODING_PATH + "/" + instance_name, STORE_DIR])
+
+    # run the one-hot encoder
+    encoding_parser.encode(
+        edgefile_path=graph_store_dir + "/" + EDGEFACT_FILE,
+        nodefile_path=graph_store_dir + "/" + NODEFACT_FILE,
+        output_path=graph_store_dir,
+        randomize_edges=False,
+    )
 
 
 def parse(graph_paths, force_parse):

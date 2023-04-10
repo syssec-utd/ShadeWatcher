@@ -22,9 +22,7 @@ def grab_facts(encoding_dir):
         FILEFACT_FILE,
         SOCKETFACT_FILE,
     ):
-        with open(encoding_dir + "/" + fact_path, encoding="utf-8") as fact_file:
-            _, *facts = fact_file.read().splitlines()
-            fact_dict[fact_path] = facts
+        fact_dict[fact_path] = read_factfile(encoding_dir + "/" + fact_path)
 
     return fact_dict
 
@@ -40,6 +38,7 @@ def train(train_paths, model_name, gnn_args):
     # create the aggregation directory using the name of the model
     os.makedirs(STORE_DIR + "/" + model_name)
 
+    # write the aggregated facts to files in the new model directory
     for fact_path, facts in fact_dict.items():
         with open(
             STORE_DIR + "/" + model_name + "/" + fact_path, "w+", encoding="utf-8"
@@ -47,7 +46,7 @@ def train(train_paths, model_name, gnn_args):
             fact_lines = "\n".join(facts)
             print(f"{len(facts)}\n{fact_lines}", file=edgefact_file)
 
-    # run the one-hot encoder on the aggregate dataset
+    # run the one-hot encoder on the aggregated dataset
     encoding_parser.encode(
         edgefile_path=STORE_DIR + "/" + model_name + "/" + EDGEFACT_FILE,
         nodefile_path=STORE_DIR + "/" + model_name + "/" + NODEFACT_FILE,
