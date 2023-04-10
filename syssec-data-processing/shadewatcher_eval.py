@@ -32,11 +32,9 @@ def pad_file(train_entity_path, test_entity_path):
 
 def evaluate(test_paths, model_path, output_file_path, token):
     # copy the model into the Shadewatcher embeddings directory
-    subprocess.run(["rm", "-rf", f"{EMBEDDING_PATH}/{token}"], check=False)
-    subprocess.run(["mkdir", "-p", f"{EMBEDDING_PATH}/{token}"], check=False)
-    subprocess.run(
-        ["cp", "-R", f"{model_path}/.", f"{EMBEDDING_PATH}/{token}"], check=False
-    )
+    subprocess.call(["rm", "-rf", f"{EMBEDDING_PATH}/{token}"])
+    subprocess.call(["mkdir", "-p", f"{EMBEDDING_PATH}/{token}"])
+    subprocess.call(["cp", "-R", f"{model_path}/.", f"{EMBEDDING_PATH}/{token}"])
 
     with open(output_file_path, "a", encoding="utf-8") as output_file:
         print(
@@ -50,11 +48,9 @@ def evaluate(test_paths, model_path, output_file_path, token):
             continue  # skip past already converted graphs
 
         # copy the encodings from the test instance into the Shadewatcher encodings directory
-        subprocess.run(["rm", "-rf", f"{ENCODING_PATH}/{token}"], check=False)
-        subprocess.run(["mkdir", "-p", f"{ENCODING_PATH}/{token}"], check=False)
-        subprocess.run(
-            ["cp", "-R", f"{test_path}/.", f"{ENCODING_PATH}/{token}"], check=False
-        )
+        subprocess.call(["rm", "-rf", f"{ENCODING_PATH}/{token}"])
+        subprocess.call(["mkdir", "-p", f"{ENCODING_PATH}/{token}"])
+        subprocess.call(["cp", "-R", f"{test_path}/.", f"{ENCODING_PATH}/{token}"])
 
         # pad the test instance to be the size of the model
         pad_file(
@@ -82,8 +78,6 @@ def evaluate(test_paths, model_path, output_file_path, token):
             stderr=subprocess.PIPE,
             check=False,
         )
-        print("test_output: ")
-        print(test_output)
 
         # example lines from output:
         #
@@ -91,9 +85,10 @@ def evaluate(test_paths, model_path, output_file_path, token):
         # 2021-11-24 19:43:41,785 |   INFO | metrics: tn_b, value: 55
         # 2021-11-24 19:43:41,785 |   INFO | metrics: fp_b, value: 7
         tn, fp = (
-            int(val[val.rindex(":".encode()) + 2 :])
-            for val in test_output.stderr.splitlines()[-2:]
+            int(val[val.rindex(":") + 2 : val.rindex("\x1b")])
+            for val in test_output.stderr.decode().splitlines()[-2:]
         )
+        print(f"[fp: {fp}] [tn: {tn}]")
 
         # save the results the a file
         with open(output_file_path, "a", encoding="utf-8") as output_file:
@@ -103,8 +98,8 @@ def evaluate(test_paths, model_path, output_file_path, token):
             )
 
     # cleanup Shadewatcher resources
-    subprocess.run(["rm", "-rf", f"{EMBEDDING_PATH}/{token}"], check=False)
-    subprocess.run(["rm", "-rf", f"{ENCODING_PATH}/{token}"], check=False)
+    subprocess.call(["rm", "-rf", f"{EMBEDDING_PATH}/{token}"])
+    subprocess.call(["rm", "-rf", f"{ENCODING_PATH}/{token}"])
 
 
 if __name__ == "__main__":
