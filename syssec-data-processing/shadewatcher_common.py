@@ -12,6 +12,9 @@ STORE_DIR = "shadewatcher_store"
 
 EDGEFACT_FILE = "edgefact_0.txt"
 NODEFACT_FILE = "nodefact.txt"
+PROCFACT_FILE = "procfact.txt"
+FILEFACT_FILE = "filefact.txt"
+SOCKETFACT_FILE = "socketfact.txt"
 
 
 def stringify_path(path_str: str):

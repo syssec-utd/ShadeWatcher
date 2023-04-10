@@ -23,7 +23,7 @@ def parse_graph(args):
 
     # parse the graph into an audit that shadewatcher can handle
     graph_to_audit.parse(graph_path, EXAMPLES_PATH + "/" + instance_name)
-    # clean out the shadewatcher directory
+    # clean out the shadewatcher encoding directory
     subprocess.call(["rm", "-rf", ENCODING_PATH + "/" + instance_name])
     # call the shadewatcher parse on the data
     subprocess.call(

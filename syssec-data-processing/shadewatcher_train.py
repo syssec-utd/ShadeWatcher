@@ -5,58 +5,47 @@ Train a model from a set of graphs
 import sys
 import os
 import subprocess
+from collections import defaultdict
 from multiprocessing import Pool
 
 from shadewatcher_common import *
 import encoding_parser
 
 
+def grab_facts(encoding_dir):
+    """collect fact files"""
+    fact_dict = dict()
+    for fact_path in (
+        EDGEFACT_FILE,
+        NODEFACT_FILE,
+        PROCFACT_FILE,
+        FILEFACT_FILE,
+        SOCKETFACT_FILE,
+    ):
+        with open(encoding_dir + "/" + fact_path, encoding="utf-8") as fact_file:
+            _, *facts = fact_file.read().splitlines()
+            fact_dict[fact_path] = facts
+
+    return fact_dict
+
+
 def train(train_paths, model_name, gnn_args):
-    # aggregate all the file's edgefacts and nodefacts together
-    def grab_facts(encoding_dir):
-        with open(
-            encoding_dir + "/" + EDGEFACT_FILE, encoding="utf-8"
-        ) as edgefact_file:
-            _, *edges = edgefact_file.read().splitlines()
-
-        with open(
-            encoding_dir + "/" + NODEFACT_FILE, encoding="utf-8"
-        ) as nodefact_file:
-            _, *nodes = nodefact_file.read().splitlines()
-
-        return (edges, nodes)
-
     # optimize collection of node and edge data from training paths
-    all_edges, all_nodes = [], []
+    fact_dict = defaultdict(list)
     with Pool(20) as pool:
-        for edges, nodes in pool.map(grab_facts, train_paths):
-            all_edges.extend(edges)
-            all_nodes.extend(nodes)
+        for slave_facts_dict in pool.map(grab_facts, train_paths):
+            for key, facts in slave_facts_dict.items():
+                fact_dict[key].extend(facts)
 
     # create the aggregation directory using the name of the model
     os.makedirs(STORE_DIR + "/" + model_name)
-    with open(
-        STORE_DIR + "/" + model_name + "/" + EDGEFACT_FILE, "w+", encoding="utf-8"
-    ) as edgefact_file:
-        print(
-            len(all_edges),
-            file=edgefact_file,
-        )
-        print(
-            "\n".join(all_edges),
-            file=edgefact_file,
-        )
-    with open(
-        STORE_DIR + "/" + model_name + "/" + NODEFACT_FILE, "w+", encoding="utf-8"
-    ) as nodefact_file:
-        print(
-            len(all_nodes),
-            file=nodefact_file,
-        )
-        print(
-            "\n".join(all_nodes),
-            file=nodefact_file,
-        )
+
+    for fact_path, facts in fact_dict.items():
+        with open(
+            STORE_DIR + "/" + model_name + "/" + fact_path, "w+", encoding="utf-8"
+        ) as edgefact_file:
+            fact_lines = "\n".join(facts)
+            print(f"{len(facts)}\n{fact_lines}", file=edgefact_file)
 
     # run the one-hot encoder on the aggregate dataset
     encoding_parser.encode(
