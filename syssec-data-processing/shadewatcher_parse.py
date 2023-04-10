@@ -19,7 +19,6 @@ def parse_graph(args):
 
     if os.path.exists(graph_store_dir) and not force_parse:
         return  # skip past already converted graphs
-    os.makedirs(graph_store_dir, exist_ok=True)
 
     # parse the graph into an audit that shadewatcher can handle
     graph_to_audit.parse(graph_path, EXAMPLES_PATH + "/" + instance_name)
@@ -41,6 +40,7 @@ def parse_graph(args):
     )
 
     # copy the files to our shadewatcher store
+    os.makedirs(graph_store_dir, exist_ok=True)
     subprocess.call(["rm", "-rf", graph_store_dir])
     subprocess.call(["mkdir", "-p", graph_store_dir])
     subprocess.call(["cp", "-R", ENCODING_PATH + "/" + instance_name, STORE_DIR])
