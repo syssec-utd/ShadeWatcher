@@ -7,6 +7,9 @@ import random
 import sys
 
 
+from shadewatcher_common import *
+
+
 def pad_file(train_entity_path, test_entity_path):
     """Pad anomaly dataset to match the entitiy dimensions of a pretrained model"""
     train_entity_count = len(read_factfile(train_entity_path))
@@ -23,7 +26,7 @@ def evaluate(test_paths, model_path, output_file_path, token):
     # copy the model into the Shadewatcher embeddings directory
     subprocess.call(["rm", "-rf", f"{EMBEDDING_PATH}/{token}"])
     subprocess.call(["mkdir", "-p", f"{EMBEDDING_PATH}/{token}"])
-    subprocess.call(["cp", "-R", model_path, f"{EMBEDDING_PATH}/{token}"])
+    subprocess.call(["cp", "-R", f"{model_path}/.", f"{EMBEDDING_PATH}/{token}"])
 
     with open(output_file_path, "a", encoding="utf-8") as output_file:
         print(
@@ -39,7 +42,7 @@ def evaluate(test_paths, model_path, output_file_path, token):
         # copy the encodings from the test instance into the Shadewatcher encodings directory
         subprocess.call(["rm", "-rf", f"{ENCODING_PATH}/{token}"])
         subprocess.call(["mkdir", "-p", f"{ENCODING_PATH}/{token}"])
-        subprocess.call(["cp", "-R", test_path, f"{ENCODING_PATH}/{token}"])
+        subprocess.call(["cp", "-R", f"{test_path}/.", f"{ENCODING_PATH}/{token}"])
 
         # pad the test instance to be the size of the model
         pad_file(
@@ -92,8 +95,6 @@ def evaluate(test_paths, model_path, output_file_path, token):
 
 if __name__ == "__main__":
     import argparse
-
-    from shadewatcher_common import *
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
