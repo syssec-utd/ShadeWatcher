@@ -10,6 +10,9 @@ GNN_PATH = shadewatcher_dir + "/recommend"
 
 STORE_DIR = "shadewatcher_store"
 
+EDGEFACT_FILE = "edgefact_0.txt"
+NODEFACT_FILE = "nodefact.txt"
+
 
 def stringify_path(path_str: str):
     """Standard way to convert a path to a valid filename"""
