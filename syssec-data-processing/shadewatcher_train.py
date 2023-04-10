@@ -72,6 +72,11 @@ if __name__ == "__main__":
         help="space delimited set of paths to the encoding directories of training data",
     )
     parser.add_argument(
+        "--glob",
+        action="store_true",
+        help="use glob matching for the `graph_paths` argument",
+    )
+    parser.add_argument(
         "model_name",
         help="identifier for this model",
     )
@@ -82,7 +87,14 @@ if __name__ == "__main__":
 
     print(args, file=sys.stderr)
 
-    train_paths = args.train_paths.split()
+    if args.glob:
+        from glob import glob
+
+        train_paths = glob(args.train_paths)
+        print(f"glob paths: {train_paths}")
+    else:
+        train_paths = args.train_paths.split()
+
     model_name = args.model_name
     gnn_args = args.gnn_args
 
