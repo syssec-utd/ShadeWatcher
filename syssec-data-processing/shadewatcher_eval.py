@@ -88,7 +88,7 @@ def evaluate(test_paths, model_path, output_file_path, token):
             int(val[val.rindex(":") + 2 : val.rindex("\x1b")])
             for val in test_output.stderr.decode().splitlines()[-2:]
         )
-        print(f"evaluation of {test_path} >> [fp: {fp}] [tn: {tn}]")
+        print(f"{test_path} >> [fp: {fp}] [tn: {tn}]")
 
         # save the results the a file
         with open(output_file_path, "a", encoding="utf-8") as output_file:
