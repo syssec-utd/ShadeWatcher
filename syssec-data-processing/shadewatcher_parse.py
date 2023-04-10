@@ -21,6 +21,8 @@ def parse_graph(args):
         return  # skip past already converted graphs
     os.makedirs(graph_store_dir, exist_ok=True)
 
+    # clean out the shadewatcher directory
+    subprocess.call(["rm", "-rf", EXAMPLES_PATH + "/" + instance_name])
     # parse the graph into an audit that shadewatcher can handle
     graph_to_audit.parse(graph_path, EXAMPLES_PATH + "/" + instance_name)
     # call the shadewatcher parse on the data
