@@ -79,6 +79,7 @@ def evaluate(test_paths, model_path, output_file_path, token):
                 str(0.89),
             ],
             cwd=GNN_PATH,
+            capture_output=True,
             check=False,
         )
         print("test_output: ")
