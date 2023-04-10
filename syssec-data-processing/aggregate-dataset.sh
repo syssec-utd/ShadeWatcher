@@ -4,6 +4,18 @@
 # and aggregating them into a single audit.
 # 'quick-run.sh' is more suited for running the full ShadeWatcher pipeline on a single graph instance.
 
+# Note:
+#   returns the audit name and entity count,
+#   you could parse this data like so:
+#
+#       audit_data=($(./aggregate-dataset.sh $dataset_path/benign | tail -n 2))
+#       audit_name=${audit_data[0]}
+#       audit_entity_count=${audit_data[1]}
+
+# >>> Example:
+# ./aggregate-dataset.sh /datasets/APT_CASE_1/stage3/445/benign
+
+
 # shell settings
 shopt -s globstar
 set -e

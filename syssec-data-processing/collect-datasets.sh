@@ -14,6 +14,15 @@ set -e
 # use globstar matching or preferred method to fill these paths.
 # for example:
 #   /datasets/APT_CASE_1*/stage{1,2,3,4,5}/*
+
+# >>> Example:
+#
+# EPOCH=30 \
+# THRESHOLD=1.5 \
+# OUTPUT_DIR=./dataset-logs/additional-eval/ \
+# ./collect-datasets.sh /datasets/APT_CASE_*/stage{1,2,3,4,5,345}/*
+
+
 dataset_paths="$@"
 
 for dataset_path in $dataset_paths; do

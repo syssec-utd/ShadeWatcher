@@ -5,6 +5,16 @@
 # which do not follow the benign/anomaly subdirectory structure
 # and may not directly match datasets
 
+# >>> Example:
+# 
+# EPOCH=30 \
+# THRESHOLD=1.5 \
+# OUTPUT_DIR=./dataset-logs/additional-eval/ \
+# TRAIN_PATHS=/datasets/4-5-graph-formatted \
+# TEST_PATHS=$(echo /datasets/APT_CASE_*_GADGET/stage{1,2,3,4,5,345}/*/anomaly/nd*) \
+# ./test-datasets.sh 
+
+
 # shell settings
 shopt -s globstar
 set -e
