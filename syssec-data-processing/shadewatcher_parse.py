@@ -67,6 +67,11 @@ if __name__ == "__main__":
         "graph_paths", help="space delimited set of paths to graph jsons"
     )
     parser.add_argument(
+        "--glob",
+        action="store_true",
+        help="use glob matching for the `graph_paths` argument",
+    )
+    parser.add_argument(
         "--force_parse",
         action="store_true",
         help="whether to parse graphs that already exist in the store",
@@ -75,7 +80,14 @@ if __name__ == "__main__":
 
     print(args, file=sys.stderr)
 
-    graph_paths = args.graph_paths.split()
+    if args.glob:
+        from glob import glob
+
+        graph_paths = glob(args.graph_paths)
+        print(f"glob paths: {graph_paths}")
+    else:
+        graph_paths = args.graph_paths.split()
+
     force_parse = args.force_parse
 
     parse(graph_paths, force_parse)
