@@ -31,7 +31,7 @@ def pad_file(train_entity_path, test_entity_path):
 
 
 def evaluate(
-    test_path_iter,
+    test_paths,
     model_path,
     output_file_path,
     token=random.randrange(10000, 10000000),
@@ -57,7 +57,7 @@ def evaluate(
             file=output_file,
         )
 
-    for test_path in test_path_iter:
+    for test_path in test_paths:
         if not os.path.exists(test_path):
             print(test_path, "is not a valid path.")
             continue  # skip past already converted graphs
@@ -138,14 +138,14 @@ if __name__ == "__main__":
 
     if args.token is not None:
         evaluate(
-            test_path_iter=path_iter_from_globs(args.test_globs.split()),
+            test_paths=paths_from_globs(args.test_globs.split()),
             model_path=args.model_path,
             output_file_path=args.output_file_path,
             token=args.token,
         )
     else:
         evaluate(
-            test_path_iter=path_iter_from_globs(args.test_globs.split()),
+            test_paths=paths_from_globs(args.test_globs.split()),
             model_path=args.model_path,
             output_file_path=args.output_file_path,
         )

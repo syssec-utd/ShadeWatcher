@@ -63,12 +63,12 @@ def parse_graph(arg_set):
     )
 
 
-def parse(graph_path_iter, force_parse=False):
+def parse(graph_paths, force_parse=False):
     """Parellelize the processing of graphs"""
     with Pool(20) as pool:
         pool.map(
             parse_graph,
-            ((graph_path, force_parse) for graph_path in graph_path_iter),
+            ((graph_path, force_parse) for graph_path in graph_paths),
         )
 
 
@@ -90,6 +90,6 @@ if __name__ == "__main__":
     print(args, file=sys.stderr)
 
     parse(
-        graph_path_iter=path_iter_from_globs(args.graph_globs.split()),
+        graph_paths=paths_from_globs(args.graph_globs.split()),
         force_parse=args.force_parse,
     )
