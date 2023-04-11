@@ -69,9 +69,12 @@ if __name__ == "__main__":
         )
 
         # remap the instance assignment
-        df["instance"] = df["instance"].apply(
-            lambda x: x[len("/datasets/") : x.index("/anomaly")]
-        )
+        try:
+            df["instance"] = df["instance"].apply(
+                lambda x: x[len("/datasets/") : x.index("/anomaly")]
+            )
+        except Exception as e:
+            print(e)
 
         if combine:
             adf = pandas.concat([adf, df])
