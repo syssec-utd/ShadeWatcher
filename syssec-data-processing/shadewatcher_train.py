@@ -27,12 +27,12 @@ def grab_facts(encoding_dir):
     return fact_dict
 
 
-def train(train_paths, model_name, gnn_args):
+def train(train_path_iter, model_name, gnn_args=""):
     """Train a model using a list of paths to directories containing graph filefacts and encodings"""
     # optimize collection of node and edge data from training paths
     fact_dict = defaultdict(list)
     with Pool(20) as pool:
-        for slave_facts_dict in pool.map(grab_facts, train_paths):
+        for slave_facts_dict in pool.map(grab_facts, train_path_iter):
             for key, facts in slave_facts_dict.items():
                 fact_dict[key].extend(facts)
 
@@ -79,8 +79,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "train_paths",
-        help="space delimited set of paths to the encoding directories of training data",
+        "train_globs",
+        help="space delimited set of glob paths to the encoding directories of training data",
     )
     parser.add_argument(
         "--glob",
@@ -100,15 +100,8 @@ if __name__ == "__main__":
 
     print(args, file=sys.stderr)
 
-    if args.glob:
-        from glob import glob
-
-        train_paths = glob(args.train_paths)
-        print(f"glob paths: {train_paths}")
-    else:
-        train_paths = args.train_paths.split()
-
-    model_name = args.model_name
-    gnn_args = args.gnn_args
-
-    train(train_paths, model_name, gnn_args)
+    train(
+        train_path_iter=path_iter_from_globs(args.train_globs.split()),
+        model_name=args.model_name,
+        gnn_args=args.gnn_args,
+    )

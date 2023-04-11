@@ -1,4 +1,6 @@
 import os
+import glob
+from itertools import chain
 
 shadewatcher_dir = os.environ["SHADEWATCHER_DIR"]
 
@@ -40,3 +42,8 @@ def read_factfile(path):
         _, *lines = fact_file.read().splitlines()
 
     return lines
+
+
+def path_iter_from_globs(globs):
+    """Turn a list of glob matchers into an iterator over all matched paths"""
+    return chain(glob.iglob(path) for path in globs)

@@ -5,7 +5,7 @@ Runs Shadewatcher evaluations against a model
 import subprocess
 import random
 import sys
-
+import os
 
 from shadewatcher_common import *
 
@@ -30,7 +30,12 @@ def pad_file(train_entity_path, test_entity_path):
             print("\n".join(lines[1:]), file=entity_file)
 
 
-def evaluate(test_paths, model_path, output_file_path, token):
+def evaluate(
+    test_path_iter,
+    model_path,
+    output_file_path,
+    token=random.randrange(10000, 10000000),
+):
     """Sequentially run each test graph through the model by copying the encodings into the
     correct Shadewatcher directory and running the gnn code with parameter:
         - 0 epoch           (no need to train the model on evaluation data)
@@ -52,7 +57,7 @@ def evaluate(test_paths, model_path, output_file_path, token):
             file=output_file,
         )
 
-    for test_path in test_paths:
+    for test_path in test_path_iter:
         if not os.path.exists(test_path):
             print(test_path, "is not a valid path.")
             continue  # skip past already converted graphs
@@ -120,7 +125,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "test_paths", help="space deliited set of paths to test graph encodings"
+        "test_globs", help="space deliited set of glob paths to test graph encodings"
     )
     parser.add_argument("model_path", help="path to the pretrained shadewatcher model")
     parser.add_argument("output_file_path", help="")
@@ -131,12 +136,16 @@ if __name__ == "__main__":
 
     print(args, file=sys.stderr)
 
-    test_paths = args.test_paths.split()
-    model_path = args.model_path
-    output_file_path = args.output_file_path
-    token = args.token
-    if token is None:
-        token = random.randrange(5000, 5000000)
-        print(f"token: {token}")
-
-    evaluate(test_paths, model_path, output_file_path, token)
+    if args.token is not None:
+        evaluate(
+            test_path_iter=path_iter_from_globs(args.test_globs.split()),
+            model_path=args.model_path,
+            output_file_path=args.output_file_path,
+            token=args.token,
+        )
+    else:
+        evaluate(
+            test_path_iter=path_iter_from_globs(args.test_globs.split()),
+            model_path=args.model_path,
+            output_file_path=args.output_file_path,
+        )

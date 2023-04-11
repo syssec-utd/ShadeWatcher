@@ -12,7 +12,7 @@ import graph_to_audit
 import encoding_parser
 
 
-def parse_graph(args):
+def parse_graph(arg_set):
     """
     Parse `graph.json` files given a list of paths,
     and copy them to the STORE (see shadewatcher_common.py) directory for use in later processing
@@ -20,7 +20,7 @@ def parse_graph(args):
     (
         graph_path,
         force_parse,
-    ) = args
+    ) = arg_set
 
     instance_name = stringify_path(graph_path)
     graph_store_dir = STORE_DIR + "/" + instance_name
@@ -63,10 +63,13 @@ def parse_graph(args):
     )
 
 
-def parse(graph_paths, force_parse):
+def parse(graph_path_iter, force_parse=False):
     """Parellelize the processing of graphs"""
     with Pool(20) as pool:
-        pool.map(parse_graph, [(x, force_parse) for x in graph_paths])
+        pool.map(
+            parse_graph,
+            ((graph_path, force_parse) for graph_path in graph_path_iter),
+        )
 
 
 if __name__ == "__main__":
@@ -74,12 +77,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "graph_paths", help="space delimited set of paths to graph jsons"
-    )
-    parser.add_argument(
-        "--glob",
-        action="store_true",
-        help="use glob matching for the `graph_paths` argument",
+        "graph_globs",
+        help="space delimited set of paths to graph jsons that supports * globs",
     )
     parser.add_argument(
         "--force_parse",
@@ -90,14 +89,7 @@ if __name__ == "__main__":
 
     print(args, file=sys.stderr)
 
-    if args.glob:
-        from glob import glob
-
-        graph_paths = glob(args.graph_paths)
-        print(f"glob paths: {graph_paths}")
-    else:
-        graph_paths = args.graph_paths.split()
-
-    force_parse = args.force_parse
-
-    parse(graph_paths, force_parse)
+    parse(
+        graph_path_iter=path_iter_from_globs(args.graph_globs.split()),
+        force_parse=args.force_parse,
+    )
