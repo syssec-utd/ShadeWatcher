@@ -1,6 +1,6 @@
 """
 Prune a training set before it is fed into Shadewatcher by
-building a frequency database of the edges and removing entries 
+building a frequency database of the edges and removing entries
 below a given frequency threshold
 """
 
@@ -68,9 +68,13 @@ def trace(node_id, encoding_path):
 
 
 def prune(encoding_path, threshold):
+    """Create a frequency database on the entries in a training encodings file,
+    and drop entries whose occurence in the database is below a set threshold
+    """
     frequency_db = defaultdict(list)
 
-    with open(f"{encoding_path}/train2id.txt") as train_file:
+    # parse the training encodings
+    with open(f"{encoding_path}/train2id.txt", encoding="utf-8") as train_file:
         line_count, *lines = train_file.read().splitlines()
 
         for line in lines:
@@ -86,7 +90,8 @@ def prune(encoding_path, threshold):
     for key, freq_set in frequency_db.items():
         print(f"{key} :: {freq_set}")
 
-    with open(f"{encoding_path}/train2id.txt", "w") as train_file:
+    # write the new training encodings back to the file
+    with open(f"{encoding_path}/train2id.txt", "w", encoding="utf-8") as train_file:
         train_file.write(line_count + "\n")
 
         for key, freq_set in frequency_db.items():

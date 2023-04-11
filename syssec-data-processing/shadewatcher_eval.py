@@ -31,6 +31,16 @@ def pad_file(train_entity_path, test_entity_path):
 
 
 def evaluate(test_paths, model_path, output_file_path, token):
+    """Sequentially run each test graph through the model by copying the encodings into the
+    correct Shadewatcher directory and running the gnn code with parameter:
+        - 0 epoch           (no need to train the model on evaluation data)
+        - 0.89 test_size    (closest you can get to 0.9 which it added to an initial 0.1 to make
+                            Shadewatcher use 100% of the input data as validation data)
+        - show_val          (display the results from the validation step, which we repurpose as evaluation)
+
+    To help differentiate these instances so that evaluations can be run in parallel,
+    utilize a token in the filepaths within Shadewatcher
+    """
     # copy the model into the Shadewatcher embeddings directory
     subprocess.call(["rm", "-rf", f"{EMBEDDING_PATH}/{token}"])
     subprocess.call(["mkdir", "-p", f"{EMBEDDING_PATH}/{token}"])
@@ -84,16 +94,17 @@ def evaluate(test_paths, model_path, output_file_path, token):
         # ...
         # 2021-11-24 19:43:41,785 |   INFO | metrics: tn_b, value: 55
         # 2021-11-24 19:43:41,785 |   INFO | metrics: fp_b, value: 7
-        tn, fp = (
+        true_negative, false_positive = (
             int(val[val.rindex(":") + 2 : val.rindex("\x1b")])
             for val in test_output.stderr.decode().splitlines()[-2:]
         )
-        print(f"{test_path} >> [fp: {fp}] [tn: {tn}]")
+
+        print(f"{test_path} >> [fp: {false_positive}] [tn: {true_negative}]")
 
         # save the results the a file
         with open(output_file_path, "a", encoding="utf-8") as output_file:
             print(
-                f"{stringify_path(test_path)},{tn},{fp}",
+                f"{stringify_path(test_path)},{true_negative},{false_positive}",
                 file=output_file,
             )
 

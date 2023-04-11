@@ -28,6 +28,7 @@ def grab_facts(encoding_dir):
 
 
 def train(train_paths, model_name, gnn_args):
+    """Train a model using a list of paths to directories containing graph filefacts and encodings"""
     # optimize collection of node and edge data from training paths
     fact_dict = defaultdict(list)
     with Pool(20) as pool:
