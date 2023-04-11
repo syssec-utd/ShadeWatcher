@@ -33,17 +33,24 @@ if __name__ == "__main__":
         help="constant for laplace smoothing the tn/fp result dataset",
         default=1,
     )
+    parser.add_argument(
+        "--combine",
+        action="store_true",
+        help="whether to combine all files in the directory or print each separately",
+    )
     args = parser.parse_args()
 
     print(args, file=sys.stderr)
 
     csv_dir = args.csv_dir
     smoothing = args.smoothing
+    combine = args.combine
 
     TRUE_NEGATIVE_KEY = "true_negative"
     FALSE_POSITIVE_KEY = "false_positive"
 
     adf = pandas.DataFrame()
+
     for csv_path in glob.glob(f"{csv_dir}/*.csv"):
         print(csv_path)
         df = pandas.read_csv(csv_path).dropna()
@@ -66,6 +73,10 @@ if __name__ == "__main__":
             lambda x: x[len("/datasets/") : x.index("/anomaly")]
         )
 
-        adf = pandas.concat([adf, df])
+        if combine:
+            adf = pandas.concat([adf, df])
+        else:
+            print(df.groupby("instance").mean().round(2).to_markdown())
 
-    print(adf.groupby("instance").mean().round(2).to_markdown())
+    if not combine:
+        print(adf.groupby("instance").mean().round(2).to_markdown())
