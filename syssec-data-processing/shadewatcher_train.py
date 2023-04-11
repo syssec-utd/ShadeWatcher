@@ -83,11 +83,6 @@ if __name__ == "__main__":
         help="space delimited set of glob paths to the encoding directories of training data",
     )
     parser.add_argument(
-        "--glob",
-        action="store_true",
-        help="use glob matching for the `graph_paths` argument",
-    )
-    parser.add_argument(
         "model_name",
         help="identifier for this model",
     )
