@@ -88,7 +88,7 @@ def prune(encoding_dir, threshold=1):
             )
 
     for key, freq_set in frequency_db.items():
-        print(f"{key} :: {freq_set}")
+        print(f"{key.encode('utf-8')} :: {freq_set}")
 
     # write the new training encodings back to the file
     with open(f"{encoding_dir}/train2id.txt", "w", encoding="utf-8") as train_file:
