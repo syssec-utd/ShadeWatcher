@@ -10,6 +10,7 @@ from multiprocessing import Pool
 
 from shadewatcher_common import *
 import encoding_parser
+import encoding_pruner
 
 
 def grab_facts(encoding_dir):
@@ -22,6 +23,10 @@ def grab_facts(encoding_dir):
         FILEFACT_FILE,
         SOCKETFACT_FILE,
     ):
+        encoding_pruner.prune(
+            encoding_path=encoding_dir + "/" + fact_path,
+            threshold=2,
+        )
         fact_dict[fact_path] = read_factfile(encoding_dir + "/" + fact_path)
 
     return fact_dict

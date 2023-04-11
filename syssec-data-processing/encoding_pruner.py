@@ -67,7 +67,7 @@ def trace(node_id, encoding_path):
     return name
 
 
-def prune(encoding_path, threshold):
+def prune(encoding_path, threshold=1):
     """Create a frequency database on the entries in a training encodings file,
     and drop entries whose occurence in the database is below a set threshold
     """
