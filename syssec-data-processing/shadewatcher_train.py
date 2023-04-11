@@ -115,4 +115,5 @@ if __name__ == "__main__":
         train_paths=paths_from_globs(args.train_globs.split()),
         model_name=args.model_name,
         gnn_args=args.gnn_args,
+        prune_threshold=args.prune_threshold,
     )
