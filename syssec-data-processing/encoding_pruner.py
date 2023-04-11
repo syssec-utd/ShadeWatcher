@@ -37,7 +37,7 @@ def trace(node_id, encoding_dir):
 
     # 3. use enumerations to read file, proc, or socket in order to get the name of the node (file, executable, ip addr, ...)
     node_hash = id_to_hash[node_id]
-    node_enum = hash_to_enum[node_hash]
+    node_enum = int(hash_to_enum[node_hash])  # dont miss int type
     if node_enum == 1:  # proc
         proc_map = {
             l[0]: l[2]
