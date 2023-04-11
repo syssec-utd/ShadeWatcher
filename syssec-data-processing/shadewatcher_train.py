@@ -13,13 +13,8 @@ import encoding_parser
 import encoding_pruner
 
 
-def grab_facts(arg_set):
+def grab_facts(encoding_dir):
     """collect fact files"""
-    (
-        encoding_dir,
-        pruning_threshold,
-    ) = arg_set
-
     fact_dict = dict()
     for fact_path in (
         EDGEFACT_FILE,
@@ -28,7 +23,6 @@ def grab_facts(arg_set):
         FILEFACT_FILE,
         SOCKETFACT_FILE,
     ):
-        encoding_pruner.prune(encoding_dir, threshold=pruning_threshold)
         fact_dict[fact_path] = read_factfile(encoding_dir + "/" + fact_path)
 
     return fact_dict
@@ -39,10 +33,7 @@ def train(train_paths, model_name, prune_threshold, gnn_args=""):
     # optimize collection of node and edge data from training paths
     fact_dict = defaultdict(list)
     with Pool(20) as pool:
-        for slave_facts_dict in pool.map(
-            grab_facts,
-            [(path, prune_threshold) for path in train_paths],
-        ):
+        for slave_facts_dict in pool.map(grab_facts, train_paths):
             for key, facts in slave_facts_dict.items():
                 fact_dict[key].extend(facts)
 
@@ -64,9 +55,13 @@ def train(train_paths, model_name, prune_threshold, gnn_args=""):
         output_path=STORE_DIR + "/" + model_name,
         randomize_edges=False,
     )
-
     # copy the files to shadewatcher
     subprocess.call(["cp", "-R", STORE_DIR + "/" + model_name, ENCODING_PATH])
+    # prune the encodings in the shadewatcher folder
+    encoding_pruner.prune(
+        encoding_dir=ENCODING_PATH + "/" + model_name,
+        threshold=prune_threshold,
+    )
 
     subprocess.check_output(
         [
