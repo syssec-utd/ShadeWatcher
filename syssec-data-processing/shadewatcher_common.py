@@ -8,7 +8,10 @@ EXAMPLES_PATH = shadewatcher_dir + "/data/examples"
 PARSER_PATH = shadewatcher_dir + "/parse"
 GNN_PATH = shadewatcher_dir + "/recommend"
 
-STORE_DIR = "shadewatcher_store"
+STORE_DIR_KEY = "STORE_DIR"
+STORE_DIR = (
+    os.environ[STORE_DIR_KEY] if STORE_DIR_KEY in os.environ else "shadewatcher_store"
+)
 
 EDGEFACT_FILE = "edgefact_0.txt"
 NODEFACT_FILE = "nodefact.txt"
