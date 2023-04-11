@@ -13,8 +13,13 @@ import encoding_parser
 import encoding_pruner
 
 
-def grab_facts(encoding_dir):
+def grab_facts(arg_set):
     """collect fact files"""
+    (
+        encoding_dir,
+        pruning_threshold,
+    ) = arg_set
+
     fact_dict = dict()
     for fact_path in (
         EDGEFACT_FILE,
@@ -23,18 +28,21 @@ def grab_facts(encoding_dir):
         FILEFACT_FILE,
         SOCKETFACT_FILE,
     ):
-        encoding_pruner.prune(encoding_dir, threshold=2)
+        encoding_pruner.prune(encoding_dir, threshold=pruning_threshold)
         fact_dict[fact_path] = read_factfile(encoding_dir + "/" + fact_path)
 
     return fact_dict
 
 
-def train(train_paths, model_name, gnn_args=""):
+def train(train_paths, model_name, prune_threshold, gnn_args=""):
     """Train a model using a list of paths to directories containing graph filefacts and encodings"""
     # optimize collection of node and edge data from training paths
     fact_dict = defaultdict(list)
     with Pool(20) as pool:
-        for slave_facts_dict in pool.map(grab_facts, train_paths):
+        for slave_facts_dict in pool.map(
+            grab_facts,
+            [(path, prune_threshold) for path in train_paths],
+        ):
             for key, facts in slave_facts_dict.items():
                 fact_dict[key].extend(facts)
 
@@ -92,6 +100,12 @@ if __name__ == "__main__":
         "--gnn_args",
         help="parameters to the shadewatcher model trainer",
         default="--epoch 30 --threshold 1.5 --show_val --show_test",
+    )
+    parser.add_argument(
+        "--prune_threshold",
+        help="threshold to pass to the pruning step",
+        type=int,
+        default=1,
     )
     args = parser.parse_args()
 

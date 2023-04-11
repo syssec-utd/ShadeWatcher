@@ -68,7 +68,7 @@ def parse(graph_paths, force_parse=False):
     with Pool(20) as pool:
         pool.map(
             parse_graph,
-            ((graph_path, force_parse) for graph_path in graph_paths),
+            [(graph_path, force_parse) for graph_path in graph_paths],
         )
 
 
