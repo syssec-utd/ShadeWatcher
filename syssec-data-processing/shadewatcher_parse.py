@@ -13,11 +13,20 @@ import encoding_parser
 
 
 def parse_graph(args):
-    graph_path, force_parse = args
+    """
+    Parse `graph.json` files given a list of paths,
+    and copy them to the STORE (see shadewatcher_common.py) directory for use in later processing
+    """
+    (
+        graph_path,
+        force_parse,
+    ) = args
+
     instance_name = stringify_path(graph_path)
     graph_store_dir = STORE_DIR + "/" + instance_name
 
     if os.path.exists(graph_store_dir) and not force_parse:
+        print(f"skipping existing graph [{graph_path}]")
         return  # skip past already converted graphs
 
     # parse the graph into an audit that shadewatcher can handle
@@ -55,6 +64,7 @@ def parse_graph(args):
 
 
 def parse(graph_paths, force_parse):
+    """Parellelize the processing of graphs"""
     with Pool(20) as pool:
         pool.map(parse_graph, [(x, force_parse) for x in graph_paths])
 
