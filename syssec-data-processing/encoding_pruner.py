@@ -78,13 +78,13 @@ def prune(encoding_dir, threshold=1):
         line_count, *lines = train_file.read().splitlines()
 
         for line in lines:
-            node1_id, relation_id, node2_id = line.split()
+            node1_id, node2_id, relation_id = line.split()
             node1_name = trace(node1_id, encoding_dir=encoding_dir)
             node2_name = trace(node2_id, encoding_dir=encoding_dir)
 
             # group edges by their named node relations
-            frequency_db[f"{node1_name} {relation_id} {node2_name}"].append(
-                f"{node1_id} {relation_id} {node2_id}"
+            frequency_db[f"{node1_name}>{node2_name}|{relation_id}"].append(
+                f"{node1_id}>{node2_id}|{relation_id}"
             )
 
     for key, freq_set in frequency_db.items():
