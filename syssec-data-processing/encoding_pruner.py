@@ -22,18 +22,18 @@ def _fetch_map(path):
     return facts
 
 
-def trace(node_id, encoding_path):
+def trace(node_id, encoding_dir):
     if node_id in trace_cache:  # return already seen nodes
         return trace_cache[node_id]
 
     # 1. use entity2id mappings to get node hash
     id_to_hash = {
         hot: nhash
-        for nhash, hot in map(str.split, _fetch_map(f"{encoding_path}/entity2id.txt"))
+        for nhash, hot in map(str.split, _fetch_map(f"{encoding_dir}/entity2id.txt"))
     }
 
     # 2. find enumeration of file, proc, and or socket from nodefacts
-    hash_to_enum = dict(map(str.split, _fetch_map(f"{encoding_path}/nodefact.txt")))
+    hash_to_enum = dict(map(str.split, _fetch_map(f"{encoding_dir}/nodefact.txt")))
 
     # 3. use enumerations to read file, proc, or socket in order to get the name of the node (file, executable, ip addr, ...)
     node_hash = id_to_hash[node_id]
@@ -41,21 +41,21 @@ def trace(node_id, encoding_path):
     if node_enum == 1:  # proc
         proc_map = {
             l[0]: l[2]
-            for l in map(str.split, _fetch_map(f"{encoding_path}/procfact.txt"))
+            for l in map(str.split, _fetch_map(f"{encoding_dir}/procfact.txt"))
         }
         name = proc_map[node_hash]
 
     elif node_enum == 2:  # file
         file_map = {
             l[0]: l[1]
-            for l in map(str.split, _fetch_map(f"{encoding_path}/filefact.txt"))
+            for l in map(str.split, _fetch_map(f"{encoding_dir}/filefact.txt"))
         }
         name = file_map[node_hash]
 
     elif node_enum == 3:  # socket
         socket_map = {
             l[0]: l[1]
-            for l in map(str.split, _fetch_map(f"{encoding_path}/socketfact.txt"))
+            for l in map(str.split, _fetch_map(f"{encoding_dir}/socketfact.txt"))
         }
         name = socket_map[node_hash]
 
@@ -67,20 +67,20 @@ def trace(node_id, encoding_path):
     return name
 
 
-def prune(encoding_path, threshold=1):
+def prune(encoding_dir, threshold=1):
     """Create a frequency database on the entries in a training encodings file,
     and drop entries whose occurence in the database is below a set threshold
     """
     frequency_db = defaultdict(list)
 
     # parse the training encodings
-    with open(f"{encoding_path}/train2id.txt", encoding="utf-8") as train_file:
+    with open(f"{encoding_dir}/train2id.txt", encoding="utf-8") as train_file:
         line_count, *lines = train_file.read().splitlines()
 
         for line in lines:
             node1_id, relation_id, node2_id = line.split()
-            node1_name = trace(node1_id, encoding_path=encoding_path)
-            node2_name = trace(node2_id, encoding_path=encoding_path)
+            node1_name = trace(node1_id, encoding_dir=encoding_dir)
+            node2_name = trace(node2_id, encoding_dir=encoding_dir)
 
             # group edges by their named node relations
             frequency_db[f"{node1_name} {relation_id} {node2_name}"].append(
@@ -91,7 +91,7 @@ def prune(encoding_path, threshold=1):
         print(f"{key} :: {freq_set}")
 
     # write the new training encodings back to the file
-    with open(f"{encoding_path}/train2id.txt", "w", encoding="utf-8") as train_file:
+    with open(f"{encoding_dir}/train2id.txt", "w", encoding="utf-8") as train_file:
         train_file.write(line_count + "\n")
 
         for key, freq_set in frequency_db.items():
@@ -109,14 +109,14 @@ if __name__ == "__main__":
         help="the frequency threshold for training entries before they are dropped",
     )
     parser.add_argument(
-        "encoding_path",
+        "encoding_dir",
         help="path to the directory of the training encodings (usually <SHADEWATCHER_DIR>/data/encoding/...)",
     )
     args = parser.parse_args()
 
     print(args, file=sys.stderr)
 
-    encoding_path = args.encoding_path
-    threshold = args.threshold
-
-    prune(encoding_path, threshold)
+    prune(
+        encoding_dir=args.encoding_dir,
+        threshold=args.threshold,
+    )

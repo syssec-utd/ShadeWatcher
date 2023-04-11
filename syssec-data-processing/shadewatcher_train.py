@@ -23,10 +23,7 @@ def grab_facts(encoding_dir):
         FILEFACT_FILE,
         SOCKETFACT_FILE,
     ):
-        encoding_pruner.prune(
-            encoding_path=encoding_dir + "/" + fact_path,
-            threshold=2,
-        )
+        encoding_pruner.prune(encoding_dir, threshold=2)
         fact_dict[fact_path] = read_factfile(encoding_dir + "/" + fact_path)
 
     return fact_dict
