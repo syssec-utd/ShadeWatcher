@@ -28,7 +28,12 @@ def grab_facts(encoding_dir):
     return fact_dict
 
 
-def train(train_paths, model_name, prune_threshold, gnn_args=""):
+def train(
+    train_paths,
+    model_name,
+    prune_threshold,
+    gnn_args="--epoch 30 --threshold 1.5 --show_val --show_test",
+):
     """Train a model using a list of paths to directories containing graph filefacts and encodings"""
     # optimize collection of node and edge data from training paths
     fact_dict = defaultdict(list)
