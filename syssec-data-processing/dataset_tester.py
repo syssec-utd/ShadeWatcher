@@ -3,23 +3,22 @@ Runs Shadewatcher evaluations against a model
 """
 
 import sys
-from multiprocessing import Pool
 
 from shadewatcher_common import *
 from shadewatcher_train import *
 from shadewatcher_eval import *
 
 
-def _test(i, train_paths, test_paths, model_name, output_dir):
+def _test(threshold, train_paths, test_paths, model_name, output_dir):
     train(
         train_paths=train_paths,
-        model_name=f"{model_name}-prune-{i}",
-        prune_threshold=i,
+        model_name=f"{model_name}-prune-{threshold}",
+        prune_threshold=threshold,
     )
     evaluate(
         test_paths=test_paths,
-        model_path=f"{STORE_DIR}/{model_name}-prune-{i}",
-        output_file_path=f"{output_dir}/prune{i}.csv",
+        model_path=f"{STORE_DIR}/{model_name}-prune-{threshold}",
+        output_file_path=f"{output_dir}/prune{threshold}.csv",
     )
 
 
@@ -31,19 +30,13 @@ def test(
     lower=1,
     upper=1,
 ):
-    with Pool(20) as pool:
-        pool.starmap(
-            _test,
-            [
-                (
-                    i,
-                    train_paths,
-                    test_paths,
-                    model_name,
-                    output_dir,
-                )
-                for i in range(lower, upper)
-            ],
+    for i in range(lower, upper):
+        _test(
+            i,
+            train_paths,
+            test_paths,
+            model_name,
+            output_dir,
         )
 
 
@@ -56,10 +49,14 @@ if __name__ == "__main__":
     parser.add_argument("model_name", help="model_name from shadewatcher_train.py")
     parser.add_argument("output_dir", help="output folder for evaluations")
     parser.add_argument(
-        "lower", help="lower bound on prune threshold from shadewatcher_train.py", type=int
+        "lower",
+        help="lower bound on prune threshold from shadewatcher_train.py",
+        type=int,
     )
     parser.add_argument(
-        "upper", help="upper bound on prune threshold from shadewatcher_train.py", type=int
+        "upper",
+        help="upper bound on prune threshold from shadewatcher_train.py",
+        type=int,
     )
     args = parser.parse_args()
 
