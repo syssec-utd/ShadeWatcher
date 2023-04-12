@@ -81,5 +81,5 @@ if __name__ == "__main__":
         else:
             print(df.groupby("instance").mean().round(2).to_markdown())
 
-    if not combine:
+    if combine:
         print(adf.groupby("instance").mean().round(2).to_markdown())
