@@ -56,10 +56,10 @@ if __name__ == "__main__":
     parser.add_argument("model_name", help="model_name from shadewatcher_train.py")
     parser.add_argument("output_dir", help="output folder for evaluations")
     parser.add_argument(
-        "lower", help="lower bound on prune threshold from shadewatcher_train.py"
+        "lower", help="lower bound on prune threshold from shadewatcher_train.py", type=int
     )
     parser.add_argument(
-        "upper", help="upper bound on prune threshold from shadewatcher_train.py"
+        "upper", help="upper bound on prune threshold from shadewatcher_train.py", type=int
     )
     args = parser.parse_args()
 
