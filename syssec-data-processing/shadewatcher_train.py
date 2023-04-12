@@ -55,13 +55,13 @@ def train(train_paths, model_name, prune_threshold, gnn_args=""):
         output_path=STORE_DIR + "/" + model_name,
         randomize_edges=False,
     )
-    # copy the files to shadewatcher
-    subprocess.call(["cp", "-R", STORE_DIR + "/" + model_name, ENCODING_PATH])
-    # prune the encodings in the shadewatcher folder
+    # prune the encodings
     encoding_pruner.prune(
-        encoding_dir=ENCODING_PATH + "/" + model_name,
+        encoding_dir=STORE_DIR + "/" + model_name,
         threshold=prune_threshold,
     )
+    # copy the files to shadewatcher
+    subprocess.call(["cp", "-R", STORE_DIR + "/" + model_name, ENCODING_PATH])
 
     subprocess.check_output(
         [
