@@ -67,6 +67,6 @@ if __name__ == "__main__":
         upper=args.upper,
         model_name=args.model_name,
         output_dir=args.output_dir,
-        test_paths=args.test_paths,
-        train_paths=args.train_paths,
+        test_paths=paths_from_globs(args.test_paths.split()),
+        train_paths=paths_from_globs(args.train_paths.split()),
     )
