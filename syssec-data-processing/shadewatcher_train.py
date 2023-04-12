@@ -36,6 +36,7 @@ def train(
 ):
     """Train a model using a list of paths to directories containing graph filefacts and encodings"""
     # optimize collection of node and edge data from training paths
+    print("building facts from training sets...", file=sys.stderr)
     fact_dict = defaultdict(list)
     with Pool(20) as pool:
         for slave_facts_dict in pool.map(grab_facts, train_paths):
@@ -46,6 +47,7 @@ def train(
     os.makedirs(STORE_DIR + "/" + model_name)
 
     # write the aggregated facts to files in the new model directory
+    print("writing facts to files...", file=sys.stderr)
     for fact_path, facts in fact_dict.items():
         with open(
             STORE_DIR + "/" + model_name + "/" + fact_path, "w+", encoding="utf-8"
@@ -54,6 +56,7 @@ def train(
             print(f"{len(facts)}\n{fact_lines}", file=edgefact_file)
 
     # run the one-hot encoder on the aggregated dataset
+    print("encoding facts...", file=sys.stderr)
     encoding_parser.encode(
         edgefile_path=STORE_DIR + "/" + model_name + "/" + EDGEFACT_FILE,
         nodefile_path=STORE_DIR + "/" + model_name + "/" + NODEFACT_FILE,
@@ -61,6 +64,7 @@ def train(
         randomize_edges=False,
     )
     # prune the encodings
+    print("pruning encodings...", file=sys.stderr)
     encoding_pruner.prune(
         encoding_dir=STORE_DIR + "/" + model_name,
         threshold=prune_threshold,
