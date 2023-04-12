@@ -12,15 +12,11 @@ import graph_to_audit
 import encoding_parser
 
 
-def parse_graph(arg_set):
+def parse_graph(graph_path, force_parse):
     """
     Parse `graph.json` files given a list of paths,
     and copy them to the STORE (see shadewatcher_common.py) directory for use in later processing
     """
-    (
-        graph_path,
-        force_parse,
-    ) = arg_set
 
     instance_name = stringify_path(graph_path)
     graph_store_dir = STORE_DIR + "/" + instance_name
@@ -66,7 +62,7 @@ def parse_graph(arg_set):
 def parse(graph_paths, force_parse=False):
     """Parellelize the processing of graphs"""
     with Pool(20) as pool:
-        pool.map(
+        pool.starmap(
             parse_graph,
             [(graph_path, force_parse) for graph_path in graph_paths],
         )
