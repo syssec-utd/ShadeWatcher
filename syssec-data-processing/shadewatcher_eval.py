@@ -8,6 +8,7 @@ import sys
 import os
 
 from shadewatcher_common import *
+import encoding_parser
 
 
 def pad_file(train_entity_path, test_entity_path):
@@ -34,6 +35,7 @@ def evaluate(
     test_paths,
     model_path,
     output_file_path,
+    randomize=False,
     token=random.randrange(10000, 10000000),
 ):
     """Sequentially run each test graph through the model by copying the encodings into the
@@ -66,6 +68,15 @@ def evaluate(
         subprocess.call(["rm", "-rf", f"{ENCODING_PATH}/{token}"])
         subprocess.call(["mkdir", "-p", f"{ENCODING_PATH}/{token}"])
         subprocess.call(["cp", "-R", f"{test_path}/.", f"{ENCODING_PATH}/{token}"])
+
+        if randomize:  # reparse the encodings with the randomized flag
+            # run the one-hot encoder
+            encoding_parser.encode(
+                edgefile_path=f"{ENCODING_PATH}/{token}/{EDGEFACT_FILE}",
+                nodefile_path=f"{ENCODING_PATH}/{token}/{NODEFACT_FILE}",
+                output_path=f"{ENCODING_PATH}/{token}",
+                randomize_edges=True,
+            )
 
         # pad the test instance to be the size of the model
         pad_file(
@@ -128,7 +139,13 @@ if __name__ == "__main__":
         "test_globs", help="space deliited set of glob paths to test graph encodings"
     )
     parser.add_argument("model_path", help="path to the pretrained shadewatcher model")
-    parser.add_argument("output_file_path", help="")
+    parser.add_argument("output_file_path", help="file path to write csv results")
+    parser.add_argument(
+        "-r",
+        "--randomize",
+        action="store_true",
+        help="randomize the edge relations",
+    )
     parser.add_argument(
         "--token", help="unique identifier for this run (for collecting data)"
     )
@@ -141,6 +158,7 @@ if __name__ == "__main__":
             test_paths=paths_from_globs(args.test_globs.split()),
             model_path=args.model_path,
             output_file_path=args.output_file_path,
+            randomize=args.randomize,
             token=args.token,
         )
     else:
@@ -148,4 +166,5 @@ if __name__ == "__main__":
             test_paths=paths_from_globs(args.test_globs.split()),
             model_path=args.model_path,
             output_file_path=args.output_file_path,
+            randomize=args.randomize,
         )
