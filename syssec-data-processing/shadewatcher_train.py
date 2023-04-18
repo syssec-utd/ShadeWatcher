@@ -32,7 +32,7 @@ def train(
     train_paths,
     model_name,
     prune_threshold,
-    gnn_args="--epoch 30 --threshold 1.5 --show_val --show_test",
+    gnn_args="--epoch 30 --threshold 1.5",
 ):
     """Train a model using a list of paths to directories containing graph filefacts and encodings"""
     # optimize collection of node and edge data from training paths
@@ -79,6 +79,8 @@ def train(
             "--dataset",
             model_name,
             "--save_model",
+            "--show_val",
+            "--show_test",
             *gnn_args.split(),
         ],
         cwd=GNN_PATH,
@@ -107,7 +109,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--gnn_args",
         help="parameters to the shadewatcher model trainer",
-        default="--epoch 30 --threshold 1.5 --show_val --show_test",
+        default="--epoch 30 --threshold 1.5",
     )
     parser.add_argument(
         "--prune_threshold",
