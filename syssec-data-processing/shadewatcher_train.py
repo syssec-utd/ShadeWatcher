@@ -66,11 +66,11 @@ def train(
     # prune the encodings
     print("pruning encodings...", file=sys.stderr)
     encoding_pruner.prune(
-        encoding_dir=STORE_DIR + "/" + model_name,
+        encoding_dir=f"{STORE_DIR}/{model_name}",
         threshold=prune_threshold,
     )
     # copy the files to shadewatcher
-    subprocess.call(["cp", "-R", STORE_DIR + "/" + model_name, ENCODING_PATH])
+    subprocess.call(["cp", "-R", f"{STORE_DIR}/{model_name}", ENCODING_PATH])
 
     subprocess.check_output(
         [
