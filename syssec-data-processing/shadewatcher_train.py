@@ -87,6 +87,10 @@ def train(
     # copy embedding files back to model folder
     subprocess.call(["cp", "-R", f"{EMBEDDING_PATH}/{model_name}", STORE_DIR])
 
+    # cleanup
+    subprocess.call(["rm", "-rf", f"{EMBEDDING_PATH}/{model_name}"])
+    subprocess.call(["rm", "-rf", f"{ENCODING_PATH}/{model_name}"])
+
 
 if __name__ == "__main__":
     import argparse

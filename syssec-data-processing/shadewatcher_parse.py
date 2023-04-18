@@ -58,6 +58,10 @@ def parse_graph(graph_path, force_parse):
         randomize_edges=False,
     )
 
+    # cleanup
+    subprocess.call(["rm", "-rf", f"{EXAMPLES_PATH}/{instance_name}"])
+    subprocess.call(["rm", "-rf", f"{ENCODING_PATH}/{instance_name}"])
+
 
 def parse(graph_paths, force_parse=False):
     """Parellelize the processing of graphs"""
