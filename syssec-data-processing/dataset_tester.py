@@ -52,7 +52,7 @@ def exp_test(
     lower=1,
     upper=1,
 ):
-    i = lower
+    i = lower if lower >= 1 else 1
     while i <= upper:
         _test(
             threshold=i,
