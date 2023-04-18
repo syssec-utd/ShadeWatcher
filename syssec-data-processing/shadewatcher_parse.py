@@ -26,9 +26,9 @@ def parse_graph(graph_path, force_parse):
         return  # skip past already converted graphs
 
     # parse the graph into an audit that shadewatcher can handle
-    graph_to_audit.parse(graph_path, EXAMPLES_PATH + "/" + instance_name)
+    graph_to_audit.parse(graph_path, f"{EXAMPLES_PATH}/{instance_name}")
     # clean out the shadewatcher encoding directory
-    subprocess.call(["rm", "-rf", ENCODING_PATH + "/" + instance_name])
+    subprocess.call(["rm", "-rf", f"{ENCODING_PATH}/{instance_name}"])
     # call the shadewatcher parse on the data
     subprocess.call(
         [
@@ -36,7 +36,7 @@ def parse_graph(graph_path, force_parse):
             "-dataset",
             instance_name,
             "-trace",
-            EXAMPLES_PATH + "/" + instance_name,
+            f"{EXAMPLES_PATH}/{instance_name}",
             "-multithread",
             str(8),
             "-storefile",
@@ -48,12 +48,12 @@ def parse_graph(graph_path, force_parse):
     os.makedirs(graph_store_dir, exist_ok=True)
     subprocess.call(["rm", "-rf", graph_store_dir])
     subprocess.call(["mkdir", "-p", graph_store_dir])
-    subprocess.call(["cp", "-R", ENCODING_PATH + "/" + instance_name, STORE_DIR])
+    subprocess.call(["cp", "-R", f"{ENCODING_PATH}/{instance_name}", STORE_DIR])
 
     # run the one-hot encoder
     encoding_parser.encode(
-        edgefile_path=graph_store_dir + "/" + EDGEFACT_FILE,
-        nodefile_path=graph_store_dir + "/" + NODEFACT_FILE,
+        edgefile_path=f"{graph_store_dir}/{EDGEFACT_FILE}",
+        nodefile_path=f"{graph_store_dir}/{NODEFACT_FILE}",
         output_path=graph_store_dir,
         randomize_edges=False,
     )

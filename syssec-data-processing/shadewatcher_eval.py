@@ -40,10 +40,11 @@ def evaluate(
 ):
     """Sequentially run each test graph through the model by copying the encodings into the
     correct Shadewatcher directory and running the gnn code with parameter:
-        - 0 epoch           (no need to train the model on evaluation data)
-        - 0.89 test_size    (closest you can get to 0.9 which it added to an initial 0.1 to make
-                            Shadewatcher use 100% of the input data as validation data)
-        - show_val          (display the results from the validation step, which we repurpose as evaluation)
+        - 0 epoch           no need to train the model on evaluation data
+        - 0.89 test_size    closest you can get to 0.9 which it added to an initial 0.1 to make
+                            Shadewatcher use 100% of the input data as validation data
+        - show_val          display the results from the validation step,
+                            which we repurpose as evaluation
 
     To help differentiate these instances so that evaluations can be run in parallel,
     utilize a token in the filepaths within Shadewatcher

@@ -2,8 +2,6 @@
 Runs Shadewatcher evaluations against a model
 """
 
-import sys
-
 from shadewatcher_common import *
 from shadewatcher_train import *
 from shadewatcher_eval import *
@@ -42,6 +40,7 @@ def test(
 
 if __name__ == "__main__":
     import argparse
+    import sys
 
     parser = argparse.ArgumentParser()
     parser.add_argument("test_paths", help="test_paths from shadewatcher_train.py")
