@@ -93,11 +93,28 @@ if __name__ == "__main__":
         "--curve",
         choices=["exp", "linear"],
         default="linear",
-        help="parameters to the shadewatcher model trainer from shadewatcher_train.py",
+        help="determine the testing threshold curve",
+    )
+    parser.add_argument(
+        "--base",
+        action="store_true",
+        help="automatically run the 0-prune model",
     )
     args = parser.parse_args()
 
     print(args, file=sys.stderr)
+
+    # use base flag to automatically run the 0 test case
+    if args.base:
+        linear_test(
+            lower=0,
+            upper=0,
+            model_name=args.model_name,
+            output_dir=args.output_dir,
+            gnn_args=args.gnn_args,
+            test_paths=paths_from_globs(args.test_paths.split()),
+            train_paths=paths_from_globs(args.train_paths.split()),
+        )
 
     if args.curve == "linear":
         linear_test(
