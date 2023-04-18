@@ -30,7 +30,7 @@ def test(
     lower=1,
     upper=1,
 ):
-    for i in range(lower, upper):
+    for i in range(lower, upper + 1):
         _test(
             i,
             train_paths,
