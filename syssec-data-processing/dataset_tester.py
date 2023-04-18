@@ -23,7 +23,7 @@ def _test(threshold, train_paths, test_paths, model_name, gnn_args, output_dir):
     )
 
 
-def test(
+def linear_test(
     test_paths,
     train_paths,
     model_name,
@@ -43,6 +43,28 @@ def test(
         )
 
 
+def exp_test(
+    test_paths,
+    train_paths,
+    model_name,
+    output_dir,
+    gnn_args,
+    lower=1,
+    upper=1,
+):
+    i = lower
+    while i <= upper:
+        _test(
+            threshold=i,
+            train_paths=train_paths,
+            test_paths=test_paths,
+            model_name=model_name,
+            output_dir=output_dir,
+            gnn_args=gnn_args,
+        )
+        i *= 2
+
+
 if __name__ == "__main__":
     import argparse
     import sys
@@ -54,29 +76,46 @@ if __name__ == "__main__":
     parser.add_argument("output_dir", help="output folder for evaluations")
     parser.add_argument(
         "--gnn_args",
-        help="parameters to the shadewatcher model trainer from shadewatcher_train.py",
         default="--epoch 30 --threshold 1.5",
+        help="parameters to the shadewatcher model trainer from shadewatcher_train.py",
     )
     parser.add_argument(
         "lower",
-        help="lower bound on prune threshold from shadewatcher_train.py",
         type=int,
+        help="lower bound on prune threshold from shadewatcher_train.py",
     )
     parser.add_argument(
         "upper",
-        help="upper bound on prune threshold from shadewatcher_train.py",
         type=int,
+        help="upper bound on prune threshold from shadewatcher_train.py",
+    )
+    parser.add_argument(
+        "--curve",
+        choices=["exp", "linear"],
+        default="linear",
+        help="parameters to the shadewatcher model trainer from shadewatcher_train.py",
     )
     args = parser.parse_args()
 
     print(args, file=sys.stderr)
 
-    test(
-        lower=args.lower,
-        upper=args.upper,
-        model_name=args.model_name,
-        output_dir=args.output_dir,
-        gnn_args=args.gnn_args,
-        test_paths=paths_from_globs(args.test_paths.split()),
-        train_paths=paths_from_globs(args.train_paths.split()),
-    )
+    if args.curve == "linear":
+        linear_test(
+            lower=args.lower,
+            upper=args.upper,
+            model_name=args.model_name,
+            output_dir=args.output_dir,
+            gnn_args=args.gnn_args,
+            test_paths=paths_from_globs(args.test_paths.split()),
+            train_paths=paths_from_globs(args.train_paths.split()),
+        )
+    elif args.curve == "exp":
+        exp_test(
+            lower=args.lower,
+            upper=args.upper,
+            model_name=args.model_name,
+            output_dir=args.output_dir,
+            gnn_args=args.gnn_args,
+            test_paths=paths_from_globs(args.test_paths.split()),
+            train_paths=paths_from_globs(args.train_paths.split()),
+        )
