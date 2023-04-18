@@ -75,7 +75,7 @@ def prune(encoding_dir, threshold=1):
 
     # parse the training encodings
     with open(f"{encoding_dir}/train2id.txt", encoding="utf-8") as train_file:
-        line_count, *lines = train_file.read().splitlines()
+        _, *lines = train_file.read().splitlines()
 
         for line in lines:
             node1_id, node2_id, relation_id = line.split()
@@ -88,16 +88,23 @@ def prune(encoding_dir, threshold=1):
             )
 
     for key, freq_set in frequency_db.items():
-        print(f"{key.encode('utf-8')} :: {freq_set}")
+        print(f"{key.encode('utf-8')} :: {len(freq_set)}", file=sys.stderr)
+
+    # drop records below the threshold
+    frequency_db = {
+        key: freq_set
+        for key, freq_set in frequency_db.items()
+        if len(freq_set) >= threshold
+    }
 
     # write the new training encodings back to the file
     with open(f"{encoding_dir}/train2id.txt", "w", encoding="utf-8") as train_file:
-        train_file.write(line_count + "\n")
-
+        train_file.write(
+            f"{sum(len(freq_set) for freq_set in frequency_db.values())}\n"
+        )
         for key, freq_set in frequency_db.items():
-            if len(freq_set) >= threshold:
-                for edge in freq_set:
-                    train_file.write(edge + "\n")
+            for edge in freq_set:
+                train_file.write(edge + "\n")
 
 
 if __name__ == "__main__":
