@@ -113,19 +113,22 @@ def evaluate(
         # ...
         # 2021-11-24 19:43:41,785 |   INFO | metrics: tn_b, value: 55
         # 2021-11-24 19:43:41,785 |   INFO | metrics: fp_b, value: 7
-        true_negative, false_positive = (
-            int(val[val.rindex(":") + 2 : val.rindex("\x1b")])
-            for val in test_output.stderr.decode().splitlines()[-2:]
-        )
-
-        print(f"[fp: {false_positive}] [tn: {true_negative}]", file=sys.stderr)
-
-        # save the results the a file
-        with open(output_file_path, "a", encoding="utf-8") as output_file:
-            print(
-                f"{stringify_path(test_path)},{true_negative},{false_positive}",
-                file=output_file,
+        try:
+            true_negative, false_positive = (
+                int(val[val.rindex(":") + 2 : val.rindex("\x1b")])
+                for val in test_output.stderr.decode().splitlines()[-2:]
             )
+
+            print(f"[fp: {false_positive}] [tn: {true_negative}]", file=sys.stderr)
+
+            # save the results the a file
+            with open(output_file_path, "a", encoding="utf-8") as output_file:
+                print(
+                    f"{stringify_path(test_path)},{true_negative},{false_positive}",
+                    file=output_file,
+                )
+        except Exception as ex:
+            print("Error:", ex, test_output.stderr.decode(), sep="\n", file=sys.stderr)
 
     print(f"finished writing results to {output_file_path}", file=sys.stderr)
 
