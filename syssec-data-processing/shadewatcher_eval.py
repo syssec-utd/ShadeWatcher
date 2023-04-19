@@ -62,8 +62,10 @@ def evaluate(
 
     for test_path in test_paths:
         if not os.path.exists(test_path):
-            print(test_path, "is not a valid path.")
+            print(test_path, "is not a valid path.", file=sys.stderr)
             continue  # skip past already converted graphs
+
+        print(f"{test_path} >> ", end="", file=sys.stderr)
 
         # copy the encodings from the test instance into the Shadewatcher encodings directory
         subprocess.call(["rm", "-rf", f"{ENCODING_PATH}/{token}"])
@@ -116,7 +118,7 @@ def evaluate(
             for val in test_output.stderr.decode().splitlines()[-2:]
         )
 
-        print(f"{test_path} >> [fp: {false_positive}] [tn: {true_negative}]")
+        print(f"[fp: {false_positive}] [tn: {true_negative}]", file=sys.stderr)
 
         # save the results the a file
         with open(output_file_path, "a", encoding="utf-8") as output_file:
@@ -125,7 +127,7 @@ def evaluate(
                 file=output_file,
             )
 
-    print(f"finished writing results to {output_file_path}")
+    print(f"finished writing results to {output_file_path}", file=sys.stderr)
 
     # cleanup Shadewatcher resources
     subprocess.call(["rm", "-rf", f"{EMBEDDING_PATH}/{token}"])
