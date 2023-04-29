@@ -257,8 +257,6 @@ def parse(input_path, output_path):
     fd_allocator = 1
 
     for vertex in graph[GraphKey.VERTICES]:
-        node_type = vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE]
-
         # add unique file descriptors to the all nodes
         vertex[VertexKey.FD_ITEM] = {ItemKey.VALUE: fd_allocator}
         fd_allocator += 1
@@ -422,7 +420,7 @@ def parse(input_path, output_path):
                 " defaulting to 127.0.0.1:8000",
                 file=sys.stderr,
             )
-            record_builder.set_destination(ip="127.0.0.1", port="8000")
+            record_builder.set_destination(ip="127.0.0.1", port=8000)
 
         audits.append(record_builder.build())
 
@@ -569,6 +567,12 @@ def parse(input_path, output_path):
                 exe_path = filenames[0][ItemKey.VALUE]
             elif fd_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.SOCKET:
                 exe_path = proc_vertex[VertexKey.CMD_ITEM][ItemKey.VALUE]
+            else:
+                exe_path = ""
+                print(
+                    f"edge [{edge[EdgeKey.ID]}] label [PROC_CREATE] from graph: [{input_path}] could not find exe_path.",
+                    file=sys.stderr,
+                )
 
             record_builder.set_process(
                 pid=fd_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
@@ -580,6 +584,7 @@ def parse(input_path, output_path):
 
         # if it is a File, create a new PID to represent the new node
         elif in_vertex_type != VertexType.PROC and out_vertex_type != VertexType.PROC:
+            # double check logic, should not occur?
             ensure_process(proc_vertex)
 
             filenames = in_vertex[VertexKey.FILENAME_SET_ITEM][ItemKey.VALUE]
@@ -632,9 +637,9 @@ def parse(input_path, output_path):
         open_socket(fd_vertex=fd_vertex, proc_vertex=proc_vertex)
 
     def handle_read_write_edge(edge):
-        # distinguish between the two cases by identifying which node in the relation is a ProcessNode
         in_vertex, out_vertex = edge_verticies(edge)
 
+        # distinguish between the two cases by identifying which node in the relation is a ProcessNode
         if out_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
             handle_write_edge(edge)
         elif in_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
@@ -644,6 +649,22 @@ def parse(input_path, output_path):
                 f"edge [{edge[EdgeKey.ID]}] label [READ_WRITE] from graph: [{input_path}] missing a process in a READ_WRITE relation.",
                 file=sys.stderr,
             )
+
+    def handle_proc_end_edge(edge):
+        in_vertex, out_vertex = edge_verticies(edge)
+        ensure_process(in_vertex)
+        ensure_process(out_vertex)
+
+        record_builder = AuditBeatJsonBuilder()
+        record_builder.set_data(
+            ShadewatcherSyscall.KILL,
+            a0=in_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+        )
+        record_builder.set_process(
+            pid=out_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
+        )
+
+        audits.append(record_builder.build())
 
     edge_cache = set()
 
@@ -678,6 +699,9 @@ def parse(input_path, output_path):
         # overloaded Relation capturing both READ and WRITE events.
         elif label == EdgeLabel.READ_WRITE:
             handle_read_write_edge(edge)
+        # signal a process to be killed
+        elif label == EdgeLabel.PROC_END:
+            handle_proc_end_edge(edge)
         # unhandled edge label
         else:
             return print(
