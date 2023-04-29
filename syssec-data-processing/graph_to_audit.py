@@ -141,6 +141,17 @@ class EdgeLabel:
     FILE_EXEC = "FILE_EXEC"
     IP_CONNECTION_EDGE = "IP_CONNECTION_EDGE"
     READ_WRITE = "READ_WRITE"
+    PROC_END = "PROC_END"
+
+
+class ShadewatcherSyscall:
+    READ = "read"
+    WRITE = "write"
+    EXECVE = "execve"
+    SOCKET = "socket"
+    CONNECT = "connect"
+    OPEN = "open"
+    KILL = "kill"
 
 
 ##############################
@@ -344,7 +355,7 @@ def parse(input_path, output_path):
     def open_file(fd_vertex, proc_vertex):
         record_builder = AuditBeatJsonBuilder()
         record_builder.set_data(
-            "open",
+            ShadewatcherSyscall.OPEN,
             exit_code=fd_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
         )
         record_builder.set_process(
@@ -381,7 +392,7 @@ def parse(input_path, output_path):
         # create socket fd
         record_builder = AuditBeatJsonBuilder()
         record_builder.set_data(
-            "socket",
+            ShadewatcherSyscall.SOCKET,
             exit_code=fd_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
         )
         record_builder.set_process(pid=proc_vertex[VertexKey.PID_ITEM][ItemKey.VALUE])
@@ -391,7 +402,7 @@ def parse(input_path, output_path):
         # create connection
         record_builder = AuditBeatJsonBuilder()
         record_builder.set_data(
-            "connect",
+            ShadewatcherSyscall.CONNECT,
             # a0=vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
             # socket=dict(),
         )
@@ -477,7 +488,7 @@ def parse(input_path, output_path):
 
         record_builder = AuditBeatJsonBuilder()
         record_builder.set_data(
-            "read",
+            ShadewatcherSyscall.READ,
             exit_code=1,
             a0=fd_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
         )
@@ -503,7 +514,7 @@ def parse(input_path, output_path):
 
         record_builder = AuditBeatJsonBuilder()
         record_builder.set_data(
-            "write",
+            ShadewatcherSyscall.WRITE,
             exit_code=1,
             a0=proc_vertex[VertexKey.FD_ITEM][ItemKey.VALUE],
         )
@@ -518,7 +529,7 @@ def parse(input_path, output_path):
         in_vertex, out_vertex = edge_verticies(edge)
 
         record_builder = AuditBeatJsonBuilder()
-        record_builder.set_data("execve")
+        record_builder.set_data(ShadewatcherSyscall.EXECVE)
 
         in_vertex_type, out_vertex_type = (
             in_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE],
@@ -604,7 +615,7 @@ def parse(input_path, output_path):
             exe_path = filenames[0][ItemKey.VALUE]
 
         record_builder = AuditBeatJsonBuilder()
-        record_builder.set_data("execve")
+        record_builder.set_data(ShadewatcherSyscall.EXECVE)
         record_builder.set_process(
             pid=exec_caller_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
             ppid=exec_caller_vertex[VertexKey.PID_ITEM][ItemKey.VALUE],
