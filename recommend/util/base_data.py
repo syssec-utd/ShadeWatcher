@@ -138,6 +138,9 @@ class DataBase(object):
             return rd
 
         kg_np = np.loadtxt(self.kg_file, dtype=np.int64, skiprows=1)
+        # when there is a single line in the file, need to increase the dimension
+        if kg_np.ndim == 1:
+            kg_np = np.array([kg_np])
         kg_np = np.unique(kg_np, axis=0)
         relation_dict = _construct_kg(kg_np)
 
