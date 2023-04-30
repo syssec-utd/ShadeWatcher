@@ -40,17 +40,19 @@ if __name__ == "__main__":
     for csv_path in glob.glob(f"{csv_dir}/*.csv"):
         df = pandas.read_csv(csv_path).dropna()
         df = df.assign(filename=csv_path)
+        df[FALSE_POSITIVE_KEY] = df[FALSE_POSITIVE_KEY].apply(lambda v: v + smoothing)
+        df[TRUE_NEGATIVE_KEY] = df[TRUE_NEGATIVE_KEY].apply(lambda v: v + smoothing)
         df = df.assign(
             f1=lambda x: f1_score(
-                tp=x[FALSE_POSITIVE_KEY] + smoothing,
+                tp=x[FALSE_POSITIVE_KEY],
                 fp=smoothing,
-                fn=x[TRUE_NEGATIVE_KEY] + smoothing,
+                fn=x[TRUE_NEGATIVE_KEY],
             )
         )
         df = df.assign(
             recall=lambda x: recall(
-                tp=x[FALSE_POSITIVE_KEY] + smoothing,
-                fn=x[TRUE_NEGATIVE_KEY] + smoothing,
+                tp=x[FALSE_POSITIVE_KEY],
+                fn=x[TRUE_NEGATIVE_KEY],
             )
         )
 
