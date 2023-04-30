@@ -67,10 +67,17 @@ def trace(node_id, encoding_dir):
     return name
 
 
-def prune(encoding_dir, threshold=1):
+def prune(encoding_dir, threshold):
     """Create a frequency database on the entries in a training encodings file,
     and drop entries whose occurence in the database is below a set threshold
     """
+    if threshold <= 1:
+        print(
+            f"not performing prune for threshold <= {threshold}",
+            file=sys.stderr,
+        )
+        return
+
     frequency_db = defaultdict(list)
 
     # parse the training encodings
