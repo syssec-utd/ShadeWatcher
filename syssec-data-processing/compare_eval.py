@@ -23,6 +23,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--smoothing",
         help="constant for laplace smoothing the tn/fp result dataset",
+        type=int,
         default=1,
     )
     args = parser.parse_args()
