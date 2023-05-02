@@ -139,6 +139,7 @@ def evaluate(
 
 if __name__ == "__main__":
     import argparse
+    import random
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -155,13 +156,22 @@ if __name__ == "__main__":
     parser.add_argument(
         "--token", help="unique identifier for this run (for collecting data)"
     )
+    parser.add_argument(
+        "--count", help="number of graphs to sample from the provided list", type=int, default=0,
+    )
     args = parser.parse_args()
 
     print(args, file=sys.stderr)
 
+    glob_paths = paths_from_globs(args.test_globs.split())
+    if args.count > 0:
+        test_paths = random.choices(glob_paths, args.count)
+    else:
+        test_paths = glob_paths
+
     if args.token is not None:
         evaluate(
-            test_paths=paths_from_globs(args.test_globs.split()),
+            test_paths=test_paths,
             model_path=args.model_path,
             output_file_path=args.output_file_path,
             randomize=args.randomize,
@@ -169,7 +179,7 @@ if __name__ == "__main__":
         )
     else:
         evaluate(
-            test_paths=paths_from_globs(args.test_globs.split()),
+            test_paths=test_paths,
             model_path=args.model_path,
             output_file_path=args.output_file_path,
             randomize=args.randomize,
