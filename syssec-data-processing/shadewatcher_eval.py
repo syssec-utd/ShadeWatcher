@@ -54,7 +54,7 @@ def evaluate(
     subprocess.call(["mkdir", "-p", f"{EMBEDDING_PATH}/{token}"])
     subprocess.call(["cp", "-R", f"{model_path}/.", f"{EMBEDDING_PATH}/{token}"])
 
-    with open(output_file_path, "w", encoding="utf-8") as output_file:
+    with open(output_file_path, "a", encoding="utf-8") as output_file:
         print(
             "instance,true_negative,false_positive",
             file=output_file,
