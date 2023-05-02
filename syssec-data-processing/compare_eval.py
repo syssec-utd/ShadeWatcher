@@ -50,12 +50,19 @@ if __name__ == "__main__":
         df = df.assign(filename=csv_path)
         agg_df = pandas.concat([agg_df, df])
 
-    # sum scores based on instance
+    # sum scores based on source file
     agg_df = agg_df.groupby("filename").sum()
+
     agg_df[FALSE_POSITIVE_KEY] = agg_df[FALSE_POSITIVE_KEY].apply(
         lambda v: v + smoothing,
     )
     agg_df[TRUE_NEGATIVE_KEY] = agg_df[TRUE_NEGATIVE_KEY].apply(
+        lambda v: v + smoothing,
+    )
+    agg_df[TRUE_POSITIVE_KEY] = agg_df[TRUE_POSITIVE_KEY].apply(
+        lambda v: v + smoothing,
+    )
+    agg_df[FALSE_NEGATIVE_KEY] = agg_df[FALSE_NEGATIVE_KEY].apply(
         lambda v: v + smoothing,
     )
 
