@@ -157,7 +157,10 @@ if __name__ == "__main__":
         "--token", help="unique identifier for this run (for collecting data)"
     )
     parser.add_argument(
-        "--count", help="number of graphs to sample from the provided list", type=int, default=0,
+        "--count",
+        help="number of graphs to sample from the provided list",
+        type=int,
+        default=0,
     )
     args = parser.parse_args()
 
@@ -165,7 +168,7 @@ if __name__ == "__main__":
 
     glob_paths = paths_from_globs(args.test_globs.split())
     if args.count > 0:
-        test_paths = random.choices(glob_paths, args.count)
+        test_paths = random.choices(glob_paths, k=args.count)
     else:
         test_paths = glob_paths
 
