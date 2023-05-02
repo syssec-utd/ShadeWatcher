@@ -55,11 +55,10 @@ def evaluate(
     subprocess.call(["mkdir", "-p", f"{EMBEDDING_PATH}/{token}"])
     subprocess.call(["cp", "-R", f"{model_path}/.", f"{EMBEDDING_PATH}/{token}"])
 
-    with open(output_file_path, "a", encoding="utf-8") as output_file:
-        print(
-            "instance,tn,fp,tp,fn",
-            file=output_file,
-        )
+    # write header to the file if it doesnt exists
+    if not os.path.exists(output_file_path):
+        with open(output_file_path, "a", encoding="utf-8") as output_file:
+            print("instance,tn,fp,tp,fn", file=output_file)
 
     for test_path in test_paths:
         if not os.path.exists(test_path):
