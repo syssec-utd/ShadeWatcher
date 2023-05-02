@@ -54,10 +54,10 @@ for train in datasets:
     for test in datasets:
         test_name = f"{train}_{test}"
         print(
-            f"{python} {eval_script} '{anomaly_paths[train]}' shadewatcher_store/{train} {test_output_dir}/{test_name}"
+            f"{python} {eval_script} '{anomaly_paths[test]}' shadewatcher_store/{train} {test_output_dir}/{test_name}"
         )
         print(
-            f"{python} {eval_script} '{benign_paths[train]}' shadewatcher_store/{train} {test_output_dir}/{test_name} --count 20 --benign"
+            f"{python} {eval_script} '{benign_paths[test]}' shadewatcher_store/{train} {test_output_dir}/{test_name} --count 20 --benign"
         )
 
 print(f"{python} compare_eval.py {test_output_dir}")
