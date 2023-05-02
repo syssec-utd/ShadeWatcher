@@ -52,7 +52,7 @@ for train in datasets:
     )
 
     for test in datasets:
-        test_name = f"{train}_{test}"
+        test_name = f"{train}_{test}.csv"
         print(
             f"{python} {eval_script} '{anomaly_paths[test]}' shadewatcher_store/{train} {test_output_dir}/{test_name}"
         )
