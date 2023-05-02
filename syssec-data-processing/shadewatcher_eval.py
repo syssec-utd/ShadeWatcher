@@ -101,7 +101,7 @@ def evaluate(
                 "--pretrain",
                 str(2),
                 "--test_size",
-                str(0.89),
+                str(0.89999),
             ],
             cwd=GNN_PATH,
             stderr=subprocess.PIPE,
