@@ -36,6 +36,8 @@ eval_script = "shadewatcher_eval.py"
 parse_script = "shadewatcher_parse.py"
 train_script = "shadewatcher_train.py"
 
+benign_test_count = 30
+
 test_output_dir = "darpa-tests"
 
 print(f"mkdir -p {test_output_dir}")
@@ -47,17 +49,19 @@ assert os.path.exists(train_script)
 print(f"{python} {parse_script} '{parse_paths}'")
 
 for train in datasets:
+    arg_string = gnn_args[train].strip().replace("-", "").replace(" ", "_")
+    model_name = f"{train}_{arg_string}"
     print(
-        f"{python} {train_script} '{benign_paths[train]}' {train} --gnn_args='{gnn_args[train]}'"
+        f"{python} {train_script} '{benign_paths[train]}' {model_name} --gnn_args='{gnn_args[train]}'"
     )
 
     for test in datasets:
         test_name = f"{train}_{test}.csv"
         print(
-            f"{python} {eval_script} '{anomaly_paths[test]}' shadewatcher_store/{train} {test_output_dir}/{test_name}"
+            f"{python} {eval_script} '{anomaly_paths[test]}' shadewatcher_store/{model_name} {test_output_dir}/{test_name}"
         )
         print(
-            f"{python} {eval_script} '{benign_paths[test]}' shadewatcher_store/{train} {test_output_dir}/{test_name} --count 20 --benign"
+            f"{python} {eval_script} '{benign_paths[test]}' shadewatcher_store/{model_name} {test_output_dir}/{test_name} --benign --count {benign_test_count}"
         )
 
 print(f"{python} compare_eval.py {test_output_dir}")
