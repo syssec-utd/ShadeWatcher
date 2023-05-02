@@ -36,6 +36,7 @@ def evaluate(
     model_path,
     output_file_path,
     randomize=False,
+    benign=True,
     token=random.randrange(10000, 10000000),
 ):
     """Sequentially run each test graph through the model by copying the encodings into the
@@ -56,7 +57,7 @@ def evaluate(
 
     with open(output_file_path, "a", encoding="utf-8") as output_file:
         print(
-            "instance,true_negative,false_positive",
+            "instance,tn,fp,tp,fn",
             file=output_file,
         )
 
@@ -119,12 +120,17 @@ def evaluate(
                 for val in test_output.stderr.decode().splitlines()[-2:]
             )
 
-            print(f"[fp: {false_positive}] [tn: {true_negative}]", file=sys.stderr)
+            if benign:
+                tn, fp, tp, fn = true_negative, false_positive, 0, 0
+            else:
+                tn, fp, tp, fn = 0, 0, false_positive, true_negative
+
+            print(f"[fp: {fp}] [tn: {tn}] [tp: {tp}] [fn: {fn}]", file=sys.stderr)
 
             # save the results the a file
             with open(output_file_path, "a", encoding="utf-8") as output_file:
                 print(
-                    f"{stringify_path(test_path)},{true_negative},{false_positive}",
+                    f"{stringify_path(test_path)},{tn},{fp},{tp},{fn}",
                     file=output_file,
                 )
         except Exception as ex:
@@ -139,7 +145,6 @@ def evaluate(
 
 if __name__ == "__main__":
     import argparse
-    import random
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -162,6 +167,11 @@ if __name__ == "__main__":
         type=int,
         default=0,
     )
+    parser.add_argument(
+        "--benign",
+        help="mark this test set as benign (swap the profile on [tp/fn] to [fp/tn])",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     print(args, file=sys.stderr)
@@ -178,6 +188,7 @@ if __name__ == "__main__":
             model_path=args.model_path,
             output_file_path=args.output_file_path,
             randomize=args.randomize,
+            benign=args.benign,
             token=args.token,
         )
     else:
@@ -186,4 +197,5 @@ if __name__ == "__main__":
             model_path=args.model_path,
             output_file_path=args.output_file_path,
             randomize=args.randomize,
+            benign=args.benign,
         )
