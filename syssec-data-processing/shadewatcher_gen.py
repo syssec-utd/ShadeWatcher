@@ -35,6 +35,12 @@ gnn_args = {
     "tc5-theia": "--epoch 17",
     "tc5-fiveD2": "--epoch 30",
     "gan": "--epoch 30",
+
+    "tc3-trace-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
+    "tc3-theia-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
+    "tc5-trace-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
+    "tc5-theia-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
+    "gan-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
 }
 
 for key in gnn_args.keys():
