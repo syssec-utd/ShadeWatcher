@@ -227,6 +227,7 @@ def parse(input_path, output_path):
 
     vertex_table = {v[VertexKey.ID]: v for v in graph[GraphKey.VERTICES]}
 
+
     #########################################
     # auditbeat stored data representations
     #########################################
@@ -246,6 +247,41 @@ def parse(input_path, output_path):
         "general.txt": list(),
         "name.txt": list(),
     }
+
+
+    def is_initial_pid(vertex):
+        """Find out if this is in the inital procinfo set"""
+        return (
+            vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC
+            and vertex[VertexKey.PID_ITEM][ItemKey.VALUE] in procinfo["pid.txt"]
+        )
+
+    def edge_comparison(e):
+        # prioritize edges with a process that way we can initialize
+        # nodes which require a source pid.
+        proc_edge_priority = 0 if VertexType.PROC in [
+            vertex_table[e[EdgeKey.OUT_VERTEX]][VertexKey.TYPE_ITEM][ItemKey.VALUE],
+            vertex_table[e[EdgeKey.IN_VERTEX]][VertexKey.TYPE_ITEM][ItemKey.VALUE],
+        ] else 1
+
+        # sort by timestamp
+        if EdgeKey.TIME_START_ITEM in e:
+            time_start_priority = e[EdgeKey.TIME_START_ITEM][ItemKey.VALUE] 
+        else:
+            time_start_priority = 0
+
+        # processes must come before process edges
+        proc_type_priority = 0 if e[EdgeKey.LABEL] == EdgeLabel.PROC_CREATE else 1
+
+        # priority to processes that belong in the system initial state
+        initial_state_priority = 0 if is_initial_pid(vertex_table[e[EdgeKey.OUT_VERTEX]]) else 1
+
+        return (
+            proc_edge_priority,
+            time_start_priority,
+            proc_type_priority,
+            initial_state_priority,
+        )
 
     ############################
     # Enrich the graph Vertices
@@ -719,34 +755,13 @@ def parse(input_path, output_path):
         # mark the edge as seen
         edge_cache.add(edge[EdgeKey.ID])
 
-    def is_initial_pid(vertex):
-        """Find out if this is in the inital procinfo set"""
-        return (
-            vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC
-            and vertex[VertexKey.PID_ITEM][ItemKey.VALUE] in procinfo["pid.txt"]
-        )
+
 
     # process edges into the audits
     # sorted by timestamp to preserve causal orderings
     for edge in sorted(
         graph[GraphKey.EDGES],
-        key=lambda e: (
-            # prioritize edges with a process that way we can initialize
-            # nodes which require a source pid.
-            0
-            if VertexType.PROC
-            in [
-                vertex_table[e[EdgeKey.OUT_VERTEX]][VertexKey.TYPE_ITEM][ItemKey.VALUE],
-                vertex_table[e[EdgeKey.IN_VERTEX]][VertexKey.TYPE_ITEM][ItemKey.VALUE],
-            ]
-            else 1,
-            # sort by timestamp
-            e[EdgeKey.TIME_START_ITEM][ItemKey.VALUE],
-            # processes must come before process edges
-            0 if e[EdgeKey.LABEL] == EdgeLabel.PROC_CREATE else 1,
-            # priority to processes that belong in the system initial state
-            0 if is_initial_pid(vertex_table[e[EdgeKey.OUT_VERTEX]]) else 1,
-        ),
+        key=edge_comparison,
     ):
         try:
             handle_edge(edge)
