@@ -27,6 +27,12 @@ benign_paths = {
     "tc5-theia": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-theia-*",
     # "tc5-fiveD2": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-fiveD2-*",
     "gan": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-reconstructed-*",
+
+    "tc3-trace-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-trace-firefox-*",
+    "tc3-theia-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-theia-firefox-*",
+    "tc5-trace-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-trace-firefox-*",
+    "tc5-theia-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-theia-firefox-*",
+    "gan-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-reconstructed-firefox_path-*",
 }
 anomaly_paths = {
     "tc3-trace": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC3-trace-*",
@@ -43,14 +49,15 @@ parse_script = "shadewatcher_parse.py"
 train_script = "shadewatcher_train.py"
 
 benign_test_count = 30
+train_percentage = 0.3
 
 test_output_dir = "darpa-tests"
-
-print(f"mkdir -p {test_output_dir}")
 
 assert os.path.exists(eval_script)
 assert os.path.exists(parse_script)
 assert os.path.exists(train_script)
+
+print(f"mkdir -p {test_output_dir}")
 
 print(f"{python} {parse_script} '{parse_paths}'")
 
@@ -58,10 +65,10 @@ for train in benign_paths.keys():
     arg_string = gnn_args[train].strip().replace("-", "").replace(" ", "_")
     model_name = f"{train}_{arg_string}"
     print(
-        f"{python} {train_script} '{benign_paths[train]}' {model_name} --gnn_args='{gnn_args[train]}'"
+        f"{python} {train_script} '{benign_paths[train]}' {model_name} --gnn_args='{gnn_args[train]}' --cut {train_percentage}"
     )
 
-    for test in set(anomaly_paths.keys()).intersection(set(benign_paths.keys())):
+    for test in anomaly_paths.keys():
         if test not in anomaly_paths or test not in benign_paths:
             continue
 

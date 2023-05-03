@@ -5,6 +5,7 @@ Train a model from a set of graphs
 import sys
 import os
 import subprocess
+import random
 from collections import defaultdict
 from multiprocessing import Pool
 
@@ -117,12 +118,21 @@ if __name__ == "__main__":
         type=int,
         default=1,
     )
+    parser.add_argument(
+        "--cut",
+        help="percentage of graphs to use for training between [0,1]",
+        type=float,
+        default=1,
+    )
     args = parser.parse_args()
 
     print(args, file=sys.stderr)
 
+    glob_paths = paths_from_globs(args.train_globs.split())
+    train_paths = random.choices(glob_paths, k=len(glob_paths) * args.cut)
+
     train(
-        train_paths=paths_from_globs(args.train_globs.split()),
+        train_paths=train_paths,
         model_name=args.model_name,
         gnn_args=args.gnn_args,
         prune_threshold=args.prune_threshold,
