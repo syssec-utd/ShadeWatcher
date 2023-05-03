@@ -1,5 +1,19 @@
 # generate commands for shadewatcher
 import os
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--train_percentage", type=float, default=0.2)
+parser.add_argument("--pretrain", action="store_true")
+
+args = parser.parse_args()
+
+base_args = []
+
+train_percentage = args.train_percentage
+if args.pretrain:
+    base_args.append("--pretrain 2")
+
 
 parse_paths = " ".join(
     [
@@ -18,6 +32,9 @@ gnn_args = {
     "tc5-fiveD2": "--epoch 30",
     "gan": "--epoch 30",
 }
+
+for key in gnn_args.keys():
+    gnn_args[key] += " " + " ".join(base_args) 
 
 benign_paths = {
     "tc3-trace": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-trace-*",
