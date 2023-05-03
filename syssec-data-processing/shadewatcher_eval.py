@@ -113,6 +113,7 @@ def evaluate(
         # ...
         # 2021-11-24 19:43:41,785 |   INFO | metrics: tn_b, value: 55
         # 2021-11-24 19:43:41,785 |   INFO | metrics: fp_b, value: 7
+        issue_count = 0
         try:
             true_negative, false_positive = (
                 int(val[val.rindex(":") + 2 : val.rindex("\x1b")])
@@ -134,8 +135,10 @@ def evaluate(
                 )
         except Exception as ex:
             print("Error:", ex, test_output.stderr.decode(), sep="\n", file=sys.stderr)
+            issue_count += 1
 
     print(f"finished writing results to {output_file_path}", file=sys.stderr)
+    print(f"{issue_count} graphs failed to evaluate.", file=sys.stderr)
 
     # cleanup Shadewatcher resources
     subprocess.call(["rm", "-rf", f"{EMBEDDING_PATH}/{token}"])
