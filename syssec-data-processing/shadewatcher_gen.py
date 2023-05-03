@@ -65,7 +65,7 @@ for train in benign_paths.keys():
         if test not in anomaly_paths or test not in benign_paths:
             continue
 
-        test_name = f"{train}_{test}.csv"
+        test_name = f"{model_name}_{test}.csv"
         print(
             f"{python} {eval_script} '{anomaly_paths[test]}' shadewatcher_store/{model_name} {test_output_dir}/{test_name}"
         )
