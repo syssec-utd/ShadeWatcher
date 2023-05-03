@@ -220,6 +220,7 @@ def parse(input_path, output_path):
     # empty graph in order to make any pipelining easier
     if not os.path.exists(input_path):
         graph = {GraphKey.EDGES: [], GraphKey.VERTICES: []}
+        print("graph path doesn't exist, defaulting to empty.", file=sys.stderr)
     else:
         with open(input_path, encoding="utf-8") as graph_json:
             graph = json.load(graph_json)
@@ -278,8 +279,14 @@ def parse(input_path, output_path):
     def create_initial_state(init_vertex):
         # add a process to the initial state
         if init_vertex[VertexKey.TYPE_ITEM][ItemKey.VALUE] == VertexType.PROC:
+            if VertexKey.CMD_ITEM in init_vertex:
+                proc_args = init_vertex[VertexKey.CMD_ITEM][ItemKey.VALUE]
+            else:
+                print("proc missing 'CMD' field.", file=sys.stderr)
+                proc_args = ""
+
             # Proc Load format: https://github.com/jun-zeng/ShadeWatcher/blob/main/parse/parser/kg.cpp#L646
-            procinfo["args.txt"].append(init_vertex[VertexKey.CMD_ITEM][ItemKey.VALUE])
+            procinfo["args.txt"].append(proc_args)
             # this exe is an absolute path, which might be a problem
             procinfo["exe.txt"].append(init_vertex[VertexKey.EXE_ITEM][ItemKey.VALUE])
             procinfo["pid.txt"].append(init_vertex[VertexKey.PID_ITEM][ItemKey.VALUE])
