@@ -134,7 +134,8 @@ def evaluate(
                     file=output_file,
                 )
         except Exception as ex:
-            print("Error:", ex, test_output.stderr.decode(), sep="\n", file=sys.stderr)
+            if "LOG_ERR" in os.environ:
+                print("Error:", ex, test_output.stderr.decode(), sep="\n", file=sys.stderr)
             issue_count += 1
 
     print(f"finished writing results to {output_file_path}", file=sys.stderr)
