@@ -14,6 +14,10 @@ train_percentage = args.train_percentage
 if args.pretrain:
     base_args.append("--pretrain 2")
 
+benign_test_count = 30
+
+test_output_dir = "darpa-tests"
+
 
 parse_paths = " ".join(
     [
@@ -64,11 +68,6 @@ python = "python3.6"
 eval_script = "shadewatcher_eval.py"
 parse_script = "shadewatcher_parse.py"
 train_script = "shadewatcher_train.py"
-
-benign_test_count = 30
-train_percentage = 0.3
-
-test_output_dir = "darpa-tests"
 
 assert os.path.exists(eval_script)
 assert os.path.exists(parse_script)
