@@ -129,7 +129,7 @@ if __name__ == "__main__":
     print(args, file=sys.stderr)
 
     glob_paths = paths_from_globs(args.train_globs.split())
-    train_paths = random.choices(glob_paths, k=len(glob_paths) * args.cut)
+    train_paths = random.choices(glob_paths, k=int(len(glob_paths) * args.cut))
 
     train(
         train_paths=train_paths,
