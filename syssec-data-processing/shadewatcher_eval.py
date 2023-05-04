@@ -35,6 +35,7 @@ def evaluate(
     test_paths,
     model_path,
     output_file_path,
+    threshold,
     randomize=False,
     benign=True,
     token=random.randrange(10000, 10000000),
@@ -98,6 +99,8 @@ def evaluate(
                 str(0),
                 "--show_val",
                 "--show_test",
+                "--threshold",
+                str(threshold),
                 "--pretrain",
                 str(2),
                 "--test_size",
@@ -178,6 +181,11 @@ if __name__ == "__main__":
         help="mark this test set as benign (swap the profile on [tp/fn] to [fp/tn])",
         action="store_true",
     )
+    parser.add_argument(
+        "--threshold",
+        help="model evaulation threshold",
+        type=int,
+    )
     args = parser.parse_args()
 
     print(args, file=sys.stderr)
@@ -196,6 +204,7 @@ if __name__ == "__main__":
             randomize=args.randomize,
             benign=args.benign,
             token=args.token,
+            threshold=args.threshold,
         )
     else:
         evaluate(
@@ -204,4 +213,5 @@ if __name__ == "__main__":
             output_file_path=args.output_file_path,
             randomize=args.randomize,
             benign=args.benign,
+            threshold=args.threshold,
         )
