@@ -184,7 +184,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--threshold",
         help="model evaulation threshold",
-        type=int,
+        type=float,
     )
     args = parser.parse_args()
 
