@@ -23,40 +23,44 @@ parse_paths = " ".join(
 gnn_args = {
     "tc3-trace": "--epoch 10",
     "tc3-theia": "--epoch 10",
-    "tc3-fiveD": "--epoch 30",
     "tc5-trace": "--epoch 15",
     "tc5-theia": "--epoch 17",
-    "tc5-fiveD2": "--epoch 30",
-    "gan": "--epoch 30",
+
+    "tc3-fiveD": "--epoch 400 --threshold 2.8",
+    "tc5-fiveD2": "--epoch 400 --threshold 2.5",
+    "gan": "--epoch 400 --threshold 2.5",
 
     "tc3-trace-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
     "tc3-theia-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
     "tc5-trace-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
     "tc5-theia-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
-    "gan-firefox": "--epoch 500 --val_size 0.3 --threshold 1.5",
+    "gan-firefox": "--epoch 500 --threshold 2.5",
 }
 
 benign_paths = {
     "tc3-trace": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-trace-*",
     "tc3-theia": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-theia-*",
-    "tc3-fiveD": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-fiveD-*",
     "tc5-trace": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-trace-*",
     "tc5-theia": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-theia-*",
+    "tc3-fiveD": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-fiveD-*",
     "tc5-fiveD2": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-fiveD2-*",
     "gan": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-reconstructed-*",
 
-    "tc3-trace-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-trace-firefox-*",
-    "tc3-theia-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-theia-firefox-*",
-    "tc5-trace-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-trace-firefox-*",
-    "tc5-theia-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-theia-firefox-*",
-    "gan-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-reconstructed-firefox_path-*",
+    # "tc3-trace-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-trace-firefox-*",
+    # "tc3-theia-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-theia-firefox-*",
+    # "tc5-trace-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-trace-firefox-*",
+    # "tc5-theia-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-theia-firefox-*",
+
+    # "gan-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-reconstructed-firefox_path-*",
 }
 anomaly_paths = {
     "tc3-trace": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC3-trace-*",
     "tc3-theia": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC3-theia-*",
-    "tc3-fiveD": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC3-fivedirections-*",
+
     "tc5-trace": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC5-TRACE-*",
     "tc5-theia": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC5-THEIA-*",
+
+    "tc3-fiveD": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC3-fivedirections-*",
     "tc5-fiveD2": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC5-FiveDirections-*",
 }
 
@@ -79,11 +83,9 @@ for train in benign_paths.keys():
     print(
         f"{python} {train_script} '{benign_paths[train]}' {model_name} --gnn_args='{gnn_args[train]}' --cut {train_percentage}"
     )
+    print()
 
-    for test in anomaly_paths.keys():
-        if test not in anomaly_paths or test not in benign_paths:
-            continue
-
+    for test in set(anomaly_paths.keys()).intersection(set(benign_paths.keys())):
         test_name = f"{model_name}_{test}.csv"
         print(
             f"{python} {eval_script} '{anomaly_paths[test]}' shadewatcher_store/{model_name} {test_output_dir}/{test_name}"
@@ -91,5 +93,6 @@ for train in benign_paths.keys():
         print(
             f"{python} {eval_script} '{benign_paths[test]}' shadewatcher_store/{model_name} {test_output_dir}/{test_name} --benign --count {benign_test_count}"
         )
+    print()
 
 print(f"{python} compare_eval.py {test_output_dir}")
