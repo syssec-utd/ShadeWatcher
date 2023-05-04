@@ -25,11 +25,9 @@ gnn_args = {
     "tc3-theia": "--epoch 10",
     "tc5-trace": "--epoch 15",
     "tc5-theia": "--epoch 17",
-
-    "tc3-fiveD": "--epoch 400 --threshold 2.8",
-    "tc5-fiveD2": "--epoch 400 --threshold 2.5",
-    "gan": "--epoch 400 --threshold 2.5",
-
+    "tc3-fiveD": "--epoch 500 --threshold 3.0",
+    "tc5-fiveD2": "--epoch 500 --threshold 3.0",
+    "gan": "--epoch 800 --threshold 3.0",
     "tc3-trace-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
     "tc3-theia-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
     "tc5-trace-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
@@ -45,21 +43,17 @@ benign_paths = {
     "tc3-fiveD": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-fiveD-*",
     "tc5-fiveD2": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-fiveD2-*",
     "gan": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-reconstructed-*",
-
     # "tc3-trace-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-trace-firefox-*",
     # "tc3-theia-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-theia-firefox-*",
     # "tc5-trace-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-trace-firefox-*",
     # "tc5-theia-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-theia-firefox-*",
-
     # "gan-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-reconstructed-firefox_path-*",
 }
 anomaly_paths = {
     "tc3-trace": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC3-trace-*",
     "tc3-theia": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC3-theia-*",
-
     "tc5-trace": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC5-TRACE-*",
     "tc5-theia": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC5-THEIA-*",
-
     "tc3-fiveD": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC3-fivedirections-*",
     "tc5-fiveD2": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC5-FiveDirections-*",
 }
