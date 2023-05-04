@@ -58,6 +58,8 @@ def evaluate(
         with open(output_file_path, "a", encoding="utf-8") as output_file:
             print("instance,tn,fp,tp,fn", file=output_file)
 
+    issue_count = 0
+
     for test_path in test_paths:
         if not os.path.exists(test_path):
             print(test_path, "is not a valid path.", file=sys.stderr)
@@ -113,7 +115,6 @@ def evaluate(
         # ...
         # 2021-11-24 19:43:41,785 |   INFO | metrics: tn_b, value: 55
         # 2021-11-24 19:43:41,785 |   INFO | metrics: fp_b, value: 7
-        issue_count = 0
         try:
             true_negative, false_positive = (
                 int(val[val.rindex(":") + 2 : val.rindex("\x1b")])
