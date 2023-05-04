@@ -3,7 +3,7 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--train_percentage", type=float, default=0.2)
+parser.add_argument("--train_percentage", type=float, default=1.0)
 
 args = parser.parse_args()
 
@@ -33,16 +33,16 @@ gnn_args = {
     "tc3-theia-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
     "tc5-trace-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
     "tc5-theia-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
-    "gan-firefox": "--epoch 50 --val_size 0.3 --threshold 1.5",
+    "gan-firefox": "--epoch 500 --val_size 0.3 --threshold 1.5",
 }
 
 benign_paths = {
     "tc3-trace": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-trace-*",
     "tc3-theia": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-theia-*",
-    # "tc3-fiveD": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-fiveD-*",
+    "tc3-fiveD": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-fiveD-*",
     "tc5-trace": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-trace-*",
     "tc5-theia": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-theia-*",
-    # "tc5-fiveD2": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-fiveD2-*",
+    "tc5-fiveD2": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc5-fiveD2-*",
     "gan": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-reconstructed-*",
 
     "tc3-trace-firefox": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-benign-tc3-trace-firefox-*",
@@ -54,10 +54,10 @@ benign_paths = {
 anomaly_paths = {
     "tc3-trace": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC3-trace-*",
     "tc3-theia": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC3-theia-*",
-    # "tc3-fiveD": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC3-fivedirections-*",
+    "tc3-fiveD": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC3-fivedirections-*",
     "tc5-trace": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC5-TRACE-*",
     "tc5-theia": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC5-THEIA-*",
-    # "tc5-fiveD2": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC5-FiveDirections-*",
+    "tc5-fiveD2": "shadewatcher_store/syssec_nas0-prov_graphs-darpa-APT-TC5-FiveDirections-*",
 }
 
 python = "python3.6"
