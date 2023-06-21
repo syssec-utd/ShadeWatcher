@@ -1,0 +1,9 @@
+services:
+  shadewatcher:
+    build: .
+    volumes:
+      - type: bind
+        # set the environment variable DATASET_PATH to the root directory
+        # where the JSON graph datasets are stored on local, NAS, or etc.
+        source: "${DATASET_PATH}"
+        target: /dataset
