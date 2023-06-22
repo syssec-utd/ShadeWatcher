@@ -185,6 +185,7 @@ if __name__ == "__main__":
         "--threshold",
         help="model evaulation threshold",
         type=float,
+        default=1.5,
     )
     args = parser.parse_args()
 
