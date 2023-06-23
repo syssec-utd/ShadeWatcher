@@ -60,4 +60,6 @@ if __name__ == "__main__":
         lambda v: v + smoothing,
     )
 
+    agg_df = agg_df.drop(columns=[FALSE_NEGATIVE_KEY, FALSE_POSITIVE_KEY])
+
     print(agg_df.round(4).to_markdown())
