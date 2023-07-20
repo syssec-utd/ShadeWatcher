@@ -1,8 +1,10 @@
-DOCKER_IMAGE=syssecutd/shadewather
+PROJ=shadewatcher
+DOCKER_IMAGE=syssecutd/$(PROJ)
 VER=$(shell git describe --first-parent)
-DOCKER_CONTAINER=shadewatcher
+DOCKER_CONTAINER=$(PROJ)
 prep: FORCE
 	@echo "any commands/tasks to prep docker image build"
+	docker volume create --name $(PROJ)
 
 remove:
 	docker stop $(DOCKER_CONTAINER)-$(VER) || true
@@ -17,5 +19,5 @@ push: build
 	docker push $(DOCKER_IMAGE):$(VER)
 	docker push $(DOCKER_IMAGE)
 
-run: build
-	docker run --name $(DOCKER_CONTAINER) -it $(DOCKER_IMAGE) 
+run: 
+	docker run -h $(PROJ) --name $(DOCKER_CONTAINER) -it $(DOCKER_IMAGE) 
