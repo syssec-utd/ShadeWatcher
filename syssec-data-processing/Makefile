@@ -7,8 +7,8 @@ prep: FORCE
 	docker volume create --name $(PROJ)
 
 remove:
-	docker stop $(DOCKER_CONTAINER)-$(VER) || true
-	docker rm $(DOCKER_CONTAINER)-$(VER) || true
+	docker stop $(DOCKER_CONTAINER) || true
+	docker rm $(DOCKER_CONTAINER) || true
 
 build:
 	docker build -t $(DOCKER_IMAGE):$(VER) .
@@ -21,3 +21,7 @@ push: build
 
 run: 
 	docker run -h $(PROJ) --name $(DOCKER_CONTAINER) -it $(DOCKER_IMAGE) 
+
+exec:
+	docker restart $(DOCKER_CONTAINER)
+	docker exec -it $(DOCKER_CONTAINER) /bin/bash
