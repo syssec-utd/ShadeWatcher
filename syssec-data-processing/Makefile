@@ -2,9 +2,9 @@ PROJ=shadewatcher
 DOCKER_IMAGE=syssecutd/$(PROJ)
 VER=$(shell git describe --first-parent)
 DOCKER_CONTAINER=$(PROJ)
-prep: FORCE
+prep:
 	@echo "any commands/tasks to prep docker image build"
-	docker volume create --name $(PROJ)
+	docker volume create --name $(PROJ)-data
 
 remove:
 	docker stop $(DOCKER_CONTAINER) || true
@@ -20,7 +20,7 @@ push: build
 	docker push $(DOCKER_IMAGE)
 
 run: 
-	docker run -h $(PROJ) --name $(DOCKER_CONTAINER) -it $(DOCKER_IMAGE) 
+	docker run -h $(PROJ) -v $(PROJ)-data:/data --name $(DOCKER_CONTAINER) -it $(DOCKER_IMAGE) 
 
 exec:
 	docker restart $(DOCKER_CONTAINER)

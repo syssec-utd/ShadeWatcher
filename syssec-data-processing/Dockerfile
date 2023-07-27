@@ -91,7 +91,7 @@ RUN cd $SHADEWATCHER_DIR/parse && \
 # python 3.6
 RUN add-apt-repository ppa:jblgf0/python && \
     apt update && \
-    apt install -y python3.6
+    apt install -y python3.6 
 
 # pip 3.6
 RUN curl https://bootstrap.pypa.io/pip/3.6/get-pip.py | python3.6
@@ -108,6 +108,9 @@ RUN cd $SHADEWATCHER_DIR/recommend && \
     python3.6 driver.py -h
 
 # <<< Recommendation Setup
+
+# additional packages
+RUN apt install -y vim 
 
 # cleanup packages
 RUN apt autoremove
